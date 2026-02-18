@@ -2,6 +2,10 @@
 // APP.JS - Main Application Logic
 // ============================================
 
+// Global state
+let projects = [];
+let lang = 'es';
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Work Manager initialized');
