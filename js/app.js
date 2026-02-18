@@ -255,54 +255,44 @@ function handleDPFileSelect(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const text = e.target.result;
-        const lines = parseCSV(text);
+        
+        // Use German CSV parser for FiberConnect format
+        const lines = parseGermanCSV(text);
         
         if (lines.length < 2) {
             alert('CSV vacío o inválido');
             return;
         }
         
-        const headers = lines[0];
-        const dpColumn = headers.findIndex(h => 
-            h.toLowerCase().includes('dp') || 
-            h.toLowerCase().includes('dp_code')
-        );
+        // Parse to objects
+        dpImportData = csvToDPObjects(lines);
         
-        if (dpColumn === -1) {
-            alert('No se encontró columna DP en el CSV');
+        if (dpImportData.length === 0) {
+            alert('No se pudieron parsear los datos del CSV');
             return;
         }
         
-        // Parse data
-        dpImportData = csvToObjects(lines);
-        
-        // Show preview
+        // Show preview using the new preview generator
         const preview = document.getElementById('dp-import-preview');
-        const sampleDPs = dpImportData.slice(0, 5).map(row => {
-            const dpVal = row.DP || row.dp || row.DP_Code;
-            const parsed = parseDPCode(dpVal);
-            return parsed ? `
-                <div style="padding: 8px; border-bottom: 1px solid var(--border);">
-                    <strong>${parsed.fullDP}</strong>
-                    <span style="color: var(--text-secondary); margin-left: 10px;">Proyecto: ${parsed.projectCode}</span>
-                </div>
-            ` : `
-                <div style="padding: 8px; color: var(--red);">
-                    Formato inválido: ${dpVal}
-                </div>
-            `;
-        }).join('');
+        const previewData = generateImportPreview(dpImportData, 8);
+        
+        const previewHTML = previewData.map(item => `
+            <div style="padding: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+                <span><strong>${item.dp}</strong> - ${item.project}</span>
+                <span style="color: var(--text-secondary);">${item.progress} ${item.status}</span>
+            </div>
+        `).join('');
         
         preview.innerHTML = `
             <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px;">
                 <div style="margin-bottom: 10px;">
-                    <strong>Total filas: ${dpImportData.length}</strong>
+                    <strong>Total DPs: ${dpImportData.length}</strong>
                 </div>
-                <div style="max-height: 200px; overflow-y: auto;">
-                    ${sampleDPs}
-                    ${dpImportData.length > 5 ? `
+                <div style="max-height: 250px; overflow-y: auto;">
+                    ${previewHTML}
+                    ${dpImportData.length > 8 ? `
                         <div style="padding: 8px; text-align: center; color: var(--text-secondary);">
-                            ... y ${dpImportData.length - 5} más
+                            ... y ${dpImportData.length - 8} más
                         </div>
                     ` : ''}
                 </div>
@@ -322,15 +312,37 @@ async function processDPImport() {
     btn.textContent = 'Importando...';
     
     try {
-        const result = await importDPs(dpImportData);
+        // Use the new import function
+        const result = await importDPsFromCSV(document.getElementById('dp-csv-file').files[0].text ? 
+            await document.getElementById('dp-csv-file').files[0].text() : 
+            dpImportData.rawText);
         
-        alert(`✅ Importación completada!\n\nProyectos: ${result.projectCount}\nDPs: ${result.dpCount}`);
+        // Store imported projects
+        if (result.projects) {
+            projects = result.projects;
+            // Update global projects array
+            if (typeof window !== 'undefined') {
+                window.projects = projects;
+            }
+        }
+        
+        alert(`✅ Importación completada!\n\nProyectos: ${result.projectCount}\nDPs: ${result.dpCount}\n${result.errors.length > 0 ? `Errores: ${result.errors.length}` : ''}`);
         
         closeImportDPModal();
-        renderProjects();
+        
+        // Refresh the view
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav && activeNav.dataset.view === 'projects') {
+            renderProjects();
+        } else {
+            // Switch to projects view
+            document.querySelector('[data-view="projects"]').click();
+        }
     } catch (err) {
         console.error(err);
         alert('❌ Error en importación: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Importar';
     }
 }
 
@@ -382,4 +394,45 @@ function csvToObjects(lines) {
         });
         return obj;
     });
+}
+
+// German CSV parser for FiberConnect format
+function parseGermanCSV(text) {
+    const lines = [];
+    let currentLine = [];
+    let currentField = '';
+    let insideQuotes = false;
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+        
+        if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+            } else {
+                insideQuotes = !insideQuotes;
+            }
+        } else if (char === ',' && !insideQuotes) {
+            currentLine.push(currentField.trim());
+            currentField = '';
+        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            if (currentField || currentLine.length > 0) {
+                currentLine.push(currentField.trim());
+                lines.push(currentLine);
+                currentLine = [];
+                currentField = '';
+            }
+        } else {
+            currentField += char;
+        }
+    }
+    
+    if (currentField || currentLine.length > 0) {
+        currentLine.push(currentField.trim());
+        lines.push(currentLine);
+    }
+    
+    return lines;
 }
