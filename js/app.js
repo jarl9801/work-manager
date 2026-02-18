@@ -307,15 +307,35 @@ function handleDPFileSelect(input) {
 async function processDPImport() {
     if (!dpImportData) return;
     
+    // Wait for DB to be ready
+    if (!dbReady) {
+        console.log('Waiting for DB to initialize...');
+        await new Promise(resolve => {
+            const checkDB = setInterval(() => {
+                if (dbReady) {
+                    clearInterval(checkDB);
+                    resolve();
+                }
+            }, 100);
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkDB);
+                resolve();
+            }, 5000);
+        });
+    }
+    
     const btn = document.getElementById('dp-import-btn');
     btn.disabled = true;
     btn.textContent = 'Importando...';
     
     try {
+        // Get the file content
+        const file = document.getElementById('dp-csv-file').files[0];
+        const text = await file.text();
+        
         // Use the new import function
-        const result = await importDPsFromCSV(document.getElementById('dp-csv-file').files[0].text ? 
-            await document.getElementById('dp-csv-file').files[0].text() : 
-            dpImportData.rawText);
+        const result = await importDPsFromCSV(text);
         
         // Store imported projects
         if (result.projects) {

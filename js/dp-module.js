@@ -225,11 +225,17 @@ async function importDPsFromCSV(csvText) {
         results.dps.push(dpData);
     }
     
-    // Save to database
-    for (const [key, project] of results.projects) {
-        if (typeof dbPut === 'function') {
-            await dbPut('projects', project);
+    // Save to database (only if db is ready)
+    if (typeof db !== 'undefined' && db && typeof dbPut === 'function') {
+        for (const [key, project] of results.projects) {
+            try {
+                await dbPut('projects', project);
+            } catch (err) {
+                console.warn('Could not save to DB:', err);
+            }
         }
+    } else {
+        console.log('DB not available, storing in memory only');
     }
     
     console.log('[Import DPs] Completed:', {
