@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Work Manager - Umtelkomd</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h2>Work Manager</h2>
+            <small>Umtelkomd</small>
+        </div>
+        <nav>
+            <div class="nav-item active" data-view="dashboard">
+                <span class="icon">📊</span>
+                <span data-t="navDashboard">Dashboard</span>
+            </div>
+            <div class="nav-item" data-view="clients">
+                <span class="icon">👥</span>
+                <span data-t="navClients">Clientes</span>
+            </div>
+            <div class="nav-item" data-view="orders">
+                <span class="icon">📋</span>
+                <span data-t="navOrders">Órdenes</span>
+            </div>
+            <div class="nav-item" data-view="projects">
+                <span class="icon">📁</span>
+                <span data-t="navProjects">Proyectos</span>
+            </div>
+            <div class="nav-item" data-view="invoicing">
+                <span class="icon">💶</span>
+                <span data-t="navInvoicing">Facturación</span>
+            </div>
+            <div class="nav-item" data-view="prices">
+                <span class="icon">💰</span>
+                <span data-t="navPrices">Precios</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Views will be loaded here -->
+        <div id="app"></div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="data/prices.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
