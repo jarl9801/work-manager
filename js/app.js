@@ -307,24 +307,6 @@ function handleDPFileSelect(input) {
 async function processDPImport() {
     if (!dpImportData) return;
     
-    // Wait for DB to be ready
-    if (!dbReady) {
-        console.log('Waiting for DB to initialize...');
-        await new Promise(resolve => {
-            const checkDB = setInterval(() => {
-                if (dbReady) {
-                    clearInterval(checkDB);
-                    resolve();
-                }
-            }, 100);
-            // Timeout after 5 seconds
-            setTimeout(() => {
-                clearInterval(checkDB);
-                resolve();
-            }, 5000);
-        });
-    }
-    
     const btn = document.getElementById('dp-import-btn');
     btn.disabled = true;
     btn.textContent = 'Importando...';
@@ -337,13 +319,10 @@ async function processDPImport() {
         // Use the new import function
         const result = await importDPsFromCSV(text);
         
-        // Store imported projects
+        // Store imported projects in memory
         if (result.projects) {
             projects = result.projects;
-            // Update global projects array
-            if (typeof window !== 'undefined') {
-                window.projects = projects;
-            }
+            window.projects = projects;
         }
         
         alert(`✅ Importación completada!\n\nProyectos: ${result.projectCount}\nDPs: ${result.dpCount}\n${result.errors.length > 0 ? `Errores: ${result.errors.length}` : ''}`);

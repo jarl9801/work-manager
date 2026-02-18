@@ -6,6 +6,7 @@ const DB_NAME = 'WorkManagerDB';
 const DB_VERSION = 2;
 
 let db = null;
+let dbReady = false;  // Global variable to track DB status
 
 // Open database connection
 function openDB() {
@@ -102,9 +103,6 @@ function dbDelete(storeName, key) {
         request.onerror = () => reject(request.error);
     });
 }
-
-// Initialize DB on load
-let dbReady = false;
 
 async function initDB() {
     try {
