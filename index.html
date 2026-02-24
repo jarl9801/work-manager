@@ -4,50 +4,426 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Work Manager - Umtelkomd</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f0f1a">
+    <title>Work Manager — Umtelkomd</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
+    <!-- Mobile overlay -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <h2>Work Manager</h2>
-            <small>Umtelkomd</small>
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12h4l3-9 4 18 3-9h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Work Manager</h2>
+                    <span class="brand-sub">Umtelkomd GmbH</span>
+                </div>
+            </div>
         </div>
-        <nav>
-            <div class="nav-item active" data-view="dashboard">
-                <span class="icon">📊</span>
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-view="dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 <span data-t="navDashboard">Dashboard</span>
-            </div>
-            <div class="nav-item" data-view="clients">
-                <span class="icon">👥</span>
+            </a>
+            <a class="nav-item" data-view="clients">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span data-t="navClients">Clientes</span>
-            </div>
-            <div class="nav-item" data-view="orders">
-                <span class="icon">📋</span>
+            </a>
+            <a class="nav-item" data-view="orders">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                 <span data-t="navOrders">Órdenes</span>
-            </div>
-            <div class="nav-item" data-view="projects">
-                <span class="icon">📁</span>
+            </a>
+            <a class="nav-item" data-view="projects">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 <span data-t="navProjects">Proyectos</span>
-            </div>
-            <div class="nav-item" data-view="invoicing">
-                <span class="icon">💶</span>
+            </a>
+            <a class="nav-item" data-view="invoicing">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 <span data-t="navInvoicing">Facturación</span>
-            </div>
-            <div class="nav-item" data-view="prices">
-                <span class="icon">💰</span>
+            </a>
+            <a class="nav-item" data-view="prices">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 <span data-t="navPrices">Precios</span>
-            </div>
+            </a>
         </nav>
+        <div class="sidebar-footer">
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="es" onclick="setLang('es')">ES</button>
+                <button class="lang-btn" data-lang="de" onclick="setLang('de')">DE</button>
+            </div>
+            <div class="version-label">v2.0</div>
+        </div>
     </aside>
 
     <!-- Main Content -->
     <main class="main">
-        <!-- Views will be loaded here -->
-        <div id="app"></div>
+        <!-- Top bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <h1 id="viewTitle" data-t="navDashboard">Dashboard</h1>
+            </div>
+            <div class="topbar-right">
+                <label class="import-btn btn btn-primary" title="Importar CSV">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Importar CSV</span>
+                    <input type="file" id="csvFileInput" accept=".csv" multiple onchange="smartImport(this)" hidden>
+                </label>
+            </div>
+        </header>
+
+        <!-- Content area -->
+        <div class="content">
+
+            <!-- ==================== DASHBOARD ==================== -->
+            <div id="view-dashboard" class="view active">
+                <!-- Primary KPIs -->
+                <div class="kpi-grid kpi-grid-3">
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="totalProjects">0</div>
+                            <div class="kpi-label" data-t="totalProjects">Proyectos</div>
+                        </div>
+                        <div class="kpi-trend" id="projectsTrend">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="totalDPs">0</div>
+                            <div class="kpi-label" data-t="totalDPs">DPs</div>
+                        </div>
+                        <div class="kpi-trend" id="dpsTrend">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon cyan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="totalClients">0</div>
+                            <div class="kpi-label" data-t="totalClients">Clientes</div>
+                        </div>
+                        <div class="kpi-trend" id="clientsTrend">—</div>
+                    </div>
+                </div>
+
+                <!-- Secondary KPIs -->
+                <div class="kpi-grid kpi-grid-3" style="margin-bottom:28px;">
+                    <div class="kpi-card kpi-card-accent orange">
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="pendingReview">0</div>
+                            <div class="kpi-label">Pendientes Revisión</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-card-accent red">
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="goDiscrepancies">0</div>
+                            <div class="kpi-label">Discrepancias GO</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-card-accent purple">
+                        <div class="kpi-body">
+                            <div class="kpi-value" id="readyToCertify">0</div>
+                            <div class="kpi-label">Listos para Certificar</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div id="adminAlerts" class="alert-section"></div>
+                <div id="adminCriticalAlerts" class="alert-section"></div>
+
+                <!-- Dashboard grid -->
+                <div class="dash-grid">
+                    <div class="dash-card">
+                        <h3>📊 Estado General</h3>
+                        <div id="statusOverview" class="status-overview"></div>
+                    </div>
+                    <div class="dash-card">
+                        <h3>🕐 Actividad Reciente</h3>
+                        <div id="activityFeed" class="activity-feed"></div>
+                    </div>
+                </div>
+
+                <!-- Projects summary -->
+                <div class="section-header">
+                    <h3>📁 Proyectos Activos</h3>
+                </div>
+                <div id="dashProjectsGrid" class="project-grid"></div>
+
+                <!-- Productivity -->
+                <div class="section-header" style="margin-top:28px;">
+                    <h3>👨‍🔧 Productividad Técnicos</h3>
+                </div>
+                <div id="productivityGrid" class="productivity-grid"></div>
+            </div>
+
+            <!-- ==================== CLIENTS ==================== -->
+            <div id="view-clients" class="view">
+                <div class="view-toolbar">
+                    <input type="text" id="clientSearch" placeholder="Buscar por auftrag, DP, calle, cable ID..." oninput="renderClients()">
+                    <select id="clientFilterProject" onchange="renderClients()"><option value="">Todos Proyectos</option></select>
+                    <select id="clientFilterDP" onchange="renderClients()"><option value="">Todos DP</option></select>
+                    <select id="clientFilterStatus" onchange="renderClients()">
+                        <option value="">Todos Estados</option>
+                        <option value="0">0 - Sin progreso</option>
+                        <option value="100">100 - Termin</option>
+                        <option value="103">103 - HBG</option>
+                        <option value="108">108 - Tiefbau</option>
+                        <option value="109">109 - Einblasen</option>
+                        <option value="Fertig">Fertig</option>
+                    </select>
+                    <span class="toolbar-count" id="clientCount">0 clientes</span>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th onclick="sortClients('auftrag')">Auftrag</th>
+                                    <th onclick="sortClients('dp')">DP</th>
+                                    <th onclick="sortClients('street')">Dirección</th>
+                                    <th onclick="sortClients('cableId')">Cable ID</th>
+                                    <th onclick="sortClients('contract')">Contrato</th>
+                                    <th onclick="sortClients('status')">Estado</th>
+                                    <th onclick="sortClients('phase')">Fase</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ORDERS ==================== -->
+            <div id="view-orders" class="view">
+                <!-- Filters -->
+                <div class="view-toolbar">
+                    <input type="text" id="orderSearch" placeholder="Buscar proyecto, DP, técnico..." oninput="applyOrderFilters()">
+                    <select id="filterTechnician" onchange="applyOrderFilters()"><option value="">Todos Técnicos</option></select>
+                    <select id="filterProject" onchange="applyOrderFilters()"><option value="">Todos Proyectos</option></select>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab active" data-tab="ra" onclick="switchOrderTab('ra')">
+                        <span>Soplado RA</span>
+                        <span class="tab-badge" id="countRA">0</span>
+                    </div>
+                    <div class="tab" data-tab="rd" onclick="switchOrderTab('rd')">
+                        <span>Soplado RD</span>
+                        <span class="tab-badge" id="countRD">0</span>
+                    </div>
+                    <div class="tab" data-tab="fusion" onclick="switchOrderTab('fusion')">
+                        <span>Fusión</span>
+                        <span class="tab-badge" id="countFusion">0</span>
+                    </div>
+                </div>
+
+                <!-- Upload sections -->
+                <div id="tab-ra" class="tab-content active">
+                    <div class="upload-card" data-type="ra">
+                        <div class="upload-row">
+                            <div class="upload-drop-zone" onclick="this.querySelector('input').click()">
+                                <input type="file" accept=".csv" onchange="handleCSVUpload(this,'ra')" hidden>
+                                <span class="upload-drop-icon">📄</span>
+                                <p>Subir CSV Soplado RA</p>
+                                <small>Arrastra o haz clic</small>
+                            </div>
+                            <div class="upload-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openOrderModal('ra')">+ Manual</button>
+                                <button class="btn btn-sm btn-danger" onclick="cleanRARecords()">🗑️ Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="statusRA" class="upload-status"></div>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr>
+                                    <th>Fecha</th><th>Proyecto</th><th>DP</th><th>Técnico</th><th>Fibras</th><th>Metros</th><th>Color</th><th>Incidencias</th><th></th>
+                                </tr></thead>
+                                <tbody id="raBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-rd" class="tab-content">
+                    <div class="upload-card" data-type="rd">
+                        <div class="upload-row">
+                            <div class="upload-drop-zone" onclick="this.querySelector('input').click()">
+                                <input type="file" accept=".csv" onchange="handleCSVUpload(this,'rd')" hidden>
+                                <span class="upload-drop-icon">📄</span>
+                                <p>Subir CSV Soplado RD</p>
+                                <small>Arrastra o haz clic</small>
+                            </div>
+                            <div class="upload-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openOrderModal('rd')">+ Manual</button>
+                                <button class="btn btn-sm btn-danger" onclick="cleanRDRecords()">🗑️ Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="statusRD" class="upload-status"></div>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr>
+                                    <th>Fecha</th><th>Proyecto</th><th>DP</th><th>Calle</th><th>KA</th><th>Técnico</th><th>Metros</th><th>Color</th><th>Fibras</th><th></th>
+                                </tr></thead>
+                                <tbody id="rdBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-fusion" class="tab-content">
+                    <div class="upload-card" data-type="fusion">
+                        <div class="upload-row">
+                            <div class="upload-drop-zone" onclick="this.querySelector('input').click()">
+                                <input type="file" accept=".csv" onchange="handleCSVUpload(this,'fusion')" hidden>
+                                <span class="upload-drop-icon">📄</span>
+                                <p>Subir CSV Fusión</p>
+                                <small>Arrastra o haz clic</small>
+                            </div>
+                            <div class="upload-actions">
+                                <button class="btn btn-sm btn-secondary" onclick="openOrderModal('fusion')">+ Manual</button>
+                                <button class="btn btn-sm btn-danger" onclick="cleanFusionRecords()">🗑️ Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="statusFUSION" class="upload-status"></div>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr>
+                                    <th>Fecha</th><th>Proyecto</th><th>DP</th><th>Técnico</th><th>Fusiones</th><th>Incidencias</th><th></th>
+                                </tr></thead>
+                                <tbody id="fusionBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PROJECTS ==================== -->
+            <div id="view-projects" class="view">
+                <div id="projectsGrid" class="project-grid"></div>
+            </div>
+
+            <!-- ==================== INVOICING ==================== -->
+            <div id="view-invoicing" class="view">
+                <div id="invoiceTotals" class="invoice-totals"></div>
+                <div class="table-container">
+                    <div class="table-toolbar">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="checkbox" id="invSelectAll" onchange="toggleAllInv(this)">
+                            <span style="font-size:13px;color:var(--text-secondary);">Seleccionar todo</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="markInvoicedBtn" style="display:none;" onclick="markInvoiced()">
+                            💶 Marcar Facturado
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="exportData()">📥 Exportar</button>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr>
+                                <th class="check-col"></th>
+                                <th>Proyecto</th><th>Dirección</th><th>Uds</th><th>Estado</th><th>Fecha Cert.</th>
+                            </tr></thead>
+                            <tbody id="invoiceBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== PRICES ==================== -->
+            <div id="view-prices" class="view">
+                <div class="price-summary">
+                    <div class="price-stat">
+                        <span class="price-stat-value" id="priceTotalItems">0</span>
+                        <span class="price-stat-label">Ítems</span>
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-value" id="priceAvgMargin">—</span>
+                        <span class="price-stat-label">Margen Promedio</span>
+                    </div>
+                </div>
+                <div class="view-toolbar">
+                    <input type="text" id="priceSearch" placeholder="Buscar por código o descripción..." oninput="renderPrices()">
+                    <select id="priceCatFilter" onchange="renderPrices()">
+                        <option value="">Todas Categorías</option>
+                        <option value="ACT">Activación (ACT)</option>
+                        <option value="BLOW">Soplado (BLOW)</option>
+                        <option value="CW">Obra Civil (CW)</option>
+                        <option value="ING">Ingeniería (ING)</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table>
+                            <thead><tr>
+                                <th data-t="thCode">Código</th>
+                                <th data-t="thDescription">Descripción</th>
+                                <th data-t="thUnit">Unidad</th>
+                                <th data-t="thSalePrice" style="text-align:right">Precio Venta (€)</th>
+                                <th data-t="thCostPrice" style="text-align:right">Precio Costo (€)</th>
+                                <th data-t="thMarginEur" style="text-align:right">Margen (€)</th>
+                                <th data-t="thMarginPct" style="text-align:right">Margen %</th>
+                            </tr></thead>
+                            <tbody id="pricesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /content -->
     </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal-overlay" onclick="if(event.target===this)closeOrderModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="orderModalTitle">Nueva Orden</h2>
+                <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+            </div>
+            <div id="orderModalFields" class="modal-body"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeOrderModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveOrderFromModal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Report Modal -->
+    <div id="importReportModal" class="modal-overlay" onclick="if(event.target===this)closeImportReport()">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="importReportTitle">Resultado de Importación</h2>
+                <button class="modal-close" onclick="closeImportReport()">&times;</button>
+            </div>
+            <div id="importReportContent" class="modal-body"></div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="closeImportReport()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
     <script src="data/prices.js"></script>
