@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html><head><title>Reset DB</title></head>
+<body style="background:#000;color:#fff;font-family:monospace;padding:40px;">
+<h2>Reseteando WorkManagerDB...</h2>
+<pre id="log"></pre>
+<script>
+const log = document.getElementById('log');
+function l(msg) { log.textContent += msg + '\n'; }
+const del = indexedDB.deleteDatabase('WorkManagerDB');
+del.onsuccess = () => { l('✅ Base de datos eliminada'); l('Recarga la app principal ahora.'); };
+del.onerror = (e) => { l('❌ Error: ' + e); };
+del.onblocked = () => { l('⚠️ DB bloqueada. Cierra las otras pestañas de work-manager y recarga esta.'); };
+</script>
+</body></html>
