@@ -641,16 +641,17 @@
 
                 let cellContent = '';
                 if (dailyEntry) {
-                    cellContent = `<div class="teams-week-bar" style="background:${dailyEntry.color || '#30d158'}">${dailyEntry.project || '✔'}</div>`;
-                } else if (assignBars) {
-                    cellContent = assignBars;
+                    cellContent = `<div class="teams-week-bar-filled" style="background:${dailyEntry.color || '#30d158'}">
+                        <span class="teams-week-bar-text">${dailyEntry.project || '✔'}</span>
+                        <button class="teams-week-remove" onclick="event.stopPropagation();window.teamsRemoveDay(${dailyEntry.id})">✕</button>
+                    </div>`;
                 }
 
                 const fillStyle = dailyEntry ? `background:${dailyEntry.color || '#30d158'}22;` : '';
 
                 teamRowsHtml += `<div class="${cellClass}" style="cursor:pointer;${fillStyle}" 
-                    onclick="window.teamsToggleDay(${team.id},${weekNum},${di})"
-                    title="${dailyEntry ? 'Clic para quitar' : 'Clic para asignar trabajo'}">${cellContent}</div>`;
+                    onclick="window.teamsAddDay(${team.id},${weekNum},${di})"
+                    title="${dailyEntry ? dailyEntry.project : 'Clic para asignar'}">${cellContent}</div>`;
             });
         });
 
@@ -693,24 +694,34 @@
     window.teamsSetDailyProject = function(name) { teamsCurrentProject.name = name; };
     window.teamsSetDailyColor = function(color) { teamsCurrentProject.color = color; };
 
-    window.teamsToggleDay = async function(teamId, week, day) {
+    window.teamsAddDay = async function(teamId, week, day) {
+        // Don't add if already exists
         const existing = teamsDailyData.find(d => d.teamId === teamId && d.year === teamsSelectedYear && d.week === week && d.day === day);
-        if (existing) {
-            // Remove
-            await teamsDelete('team_daily', existing.id);
-            teamsDailyData = teamsDailyData.filter(d => d.id !== existing.id);
-        } else {
-            // Add
-            const entry = {
-                teamId, year: teamsSelectedYear, week, day,
-                project: teamsCurrentProject.name || '',
-                color: teamsCurrentProject.color || '#30d158'
-            };
-            const id = await teamsPut('team_daily', entry);
-            entry.id = id;
-            teamsDailyData.push(entry);
+        if (existing) return;
+
+        const projectName = document.getElementById('teams-daily-project')?.value || teamsCurrentProject.name || '';
+        const projectColor = document.getElementById('teams-daily-color')?.value || teamsCurrentProject.color || '#30d158';
+
+        if (!projectName) {
+            const input = document.getElementById('teams-daily-project');
+            if (input) { input.focus(); input.placeholder = '⚠️ Escribe un proyecto...'; input.style.borderColor = '#ef4444'; 
+                setTimeout(() => { input.placeholder = 'Nombre proyecto...'; input.style.borderColor = ''; }, 2000); }
+            return;
         }
+
+        const entry = { teamId, year: teamsSelectedYear, week, day, project: projectName, color: projectColor };
+        const id = await teamsPut('team_daily', entry);
+        entry.id = id;
+        teamsDailyData.push(entry);
+        teamsCurrentProject.name = projectName;
+        teamsCurrentProject.color = projectColor;
         renderWeekDetail(week);
+    };
+
+    window.teamsRemoveDay = async function(entryId) {
+        await teamsDelete('team_daily', entryId);
+        teamsDailyData = teamsDailyData.filter(d => d.id !== entryId);
+        renderWeekDetail(teamsCurrentWeekView);
     };
 
     window.teamsBackToGantt = function() {
