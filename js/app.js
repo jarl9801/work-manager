@@ -184,9 +184,9 @@ const STATUS_LABELS = {
     'HBG':'Hausbegehung', 'HAS':'Hausanschluss', 'AV':'Arb.Vorb.', 'MON':'Montage', 'Fertig':'Fertig', '0':'—'
 };
 function phaseToStatus(phase) {
-    const p = (phase || '').trim().replace(/\s+/g,'');
+    const p = (phase || '').trim().replace(/\s+/g,'').normalize('NFC');
     for (const [key, val] of Object.entries(PHASE_STATUS_MAP)) {
-        if (p.toLowerCase().startsWith(key.toLowerCase())) return val;
+        if (p.toLowerCase().startsWith(key.normalize('NFC').toLowerCase())) return val;
     }
     return '0';
 }
@@ -383,7 +383,7 @@ async function importClients(objs) {
         const grundNA = (o['GrundNA'] || '').trim();
         let contract = 'R20';
         if (['R0','R1','R6','R18','R20'].includes(grundNA)) contract = grundNA;
-        const phase = (o['Status'] || '').trim();
+        const phase = (o['Status'] || o['Anschlussstatus'] || o['Phase'] || o['status'] || '').trim();
         const status = phaseToStatus(phase);
         const existing = existingByAuftrag[auftrag];
         const client = {
