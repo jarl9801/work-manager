@@ -375,9 +375,13 @@ async function importGoStatus(objs) {
     for (const o of objs) {
         const keys = Object.keys(o);
         const projKey = keys.find(k => k.toLowerCase().includes('projekt') && k.toLowerCase().includes('nummer')) || keys[0];
+        const dpFull = o['DP'] || '';
+        const dpProjMatch = dpFull.match(/(QFF-\d+)/i);
+        const goProjectCode = dpProjMatch ? dpProjMatch[1].toUpperCase() : '';
         await dbPut('go_status', {
             projektnummer: o[projKey] || '', projekt: o['Projekt'] || '',
-            dp: normalizeDP(o['DP'] || ''), dpFull: o['DP'] || '',
+            projectCode: goProjectCode,
+            dp: normalizeDP(dpFull), dpFull,
             startTiefbau: o['Start Tiefbau'] || '', endeTiefbau: o['Ende Tiefbau'] || '',
             tiefbauFertig: (o[keys.find(k => k.toLowerCase().includes('tiefbau fertig'))] || '').toString(),
             kabelsorte: o['Kabelsorte'] || '',
@@ -395,8 +399,7 @@ function findMissingGO(type) {
         const raProjects = new Set(ordersRA.map(o => o.projectCode));
         goStatus.forEach(g => {
             if (g.einblasenAPDP?.toUpperCase().includes('GEREED')) {
-                const client = clients.find(c => c.dp === g.dp);
-                const pc = client?.projectCode || '';
+                const pc = g.projectCode || clients.find(c => c.dp === g.dp)?.projectCode || '';
                 if (pc && !raProjects.has(pc)) missing.push(`${pc} ${g.dp}`);
             }
         });
@@ -487,17 +490,16 @@ async function cleanFusionRecords() {
 function calculateGODiscrepancies() {
     try {
         const discrepancies = [];
-        const goByDP = {};
-        goStatus.forEach(g => { goByDP[g.dp] = g; });
+        const goByDP = buildGoByDP();
         ordersRD.forEach(o => {
             if (!o.dp) return;
-            const g = goByDP[o.dp];
+            const g = goLookup(goByDP, o.projectCode, o.dp);
             if (!g) discrepancies.push({ type:'RD', project:o.projectCode, dp:o.dp, issue:'DP no encontrado en GO' });
             else if (!g.einblasenAPDP?.toUpperCase().includes('GEREED')) discrepancies.push({ type:'RD', project:o.projectCode, dp:o.dp, issue:'Soplado hecho, no GEREED en GO' });
         });
         ordersFusion.forEach(o => {
             if (!o.dp) return;
-            const g = goByDP[o.dp];
+            const g = goLookup(goByDP, o.projectCode, o.dp);
             if (!g) discrepancies.push({ type:'Fusión', project:o.projectCode, dp:o.dp, issue:'DP no encontrado en GO' });
             else if (!g.spleissenAP?.toUpperCase().includes('GEREED') && !g.spleisseDPbereit?.toUpperCase().includes('GEREED'))
                 discrepancies.push({ type:'Fusión', project:o.projectCode, dp:o.dp, issue:'Fusión hecha, no GEREED en GO' });
@@ -638,7 +640,7 @@ function renderDashboardProjects() {
         }
         let blowDone = 0, spliceDone = 0;
         data.dps.forEach(dp => {
-            const g = goByDP[dp];
+            const g = goLookup(goByDP, code, dp);
             if (g?.einblasenAPDP?.toUpperCase().includes('GEREED')) blowDone++;
             if (g?.spleissenAP?.toUpperCase().includes('GEREED')) spliceDone++;
         });
@@ -942,8 +944,18 @@ function buildProjectMap() {
 
 function buildGoByDP() {
     const goByDP = {};
-    goStatus.forEach(g => { goByDP[g.dp] = g; });
+    goStatus.forEach(g => {
+        // Key by projectCode|dp if available, and also by just dp as fallback
+        if (g.projectCode) {
+            goByDP[`${g.projectCode}|${g.dp}`] = g;
+        }
+        // Fallback: only set if no collision (don't overwrite)
+        if (!goByDP[g.dp]) goByDP[g.dp] = g;
+    });
     return goByDP;
+}
+function goLookup(goByDP, projectCode, dp) {
+    return goByDP[`${projectCode}|${dp}`] || goByDP[dp] || null;
 }
 
 function renderProjects() {
@@ -962,7 +974,7 @@ function renderProjects() {
 
         let blowDone = 0, spliceAPDone = 0, spliceDPDone = 0;
         data.dps.forEach(dp => {
-            const g = goByDP[dp];
+            const g = goLookup(goByDP, code, dp);
             if (g?.einblasenAPDP?.toUpperCase().includes('GEREED')) blowDone++;
             if (g?.spleissenAP?.toUpperCase().includes('GEREED')) spliceAPDone++;
             if (g?.spleisseDPbereit?.toUpperCase().includes('GEREED')) spliceDPDone++;
@@ -978,7 +990,7 @@ function renderProjects() {
             const safeCode = code.replace(/[^a-zA-Z0-9_-]/g,'');
             let dpRows = '';
             for (const dp of sortedDPs) {
-                const g = goByDP[dp];
+                const g = goLookup(goByDP, code, dp);
                 const blowOK = g?.einblasenAPDP?.toUpperCase().includes('GEREED');
                 const spliceAPOK = g?.spleissenAP?.toUpperCase().includes('GEREED');
                 const spliceDPOK = g?.spleisseDPbereit?.toUpperCase().includes('GEREED');
