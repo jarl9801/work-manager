@@ -185,13 +185,15 @@
                     <select id="clientFilterDP" onchange="renderClients()"><option value="">Todos DP</option></select>
                     <select id="clientFilterStatus" onchange="renderClients()">
                         <option value="">Todos Estados</option>
-                        <option value="0">0 - Sin progreso</option>
-                        <option value="100">100 - HAS</option>
-                        <option value="101">101 - Spleiße</option>
-                        <option value="102">102 - Abliefern</option>
-                        <option value="103">103 - Termin</option>
-                        <option value="108">108 - Tiefbau</option>
-                        <option value="109">109 - Einblasen</option>
+                        <option value="108">Tiefbau</option>
+                        <option value="109">Einblasen</option>
+                        <option value="SPL">Spleiße</option>
+                        <option value="102">Abliefern</option>
+                        <option value="HBG">HBG</option>
+                        <option value="103">Termin</option>
+                        <option value="AV">Arb.Vorb.</option>
+                        <option value="MON">Montage</option>
+                        <option value="0">Sin progreso</option>
                         <option value="Fertig">Fertig</option>
                     </select>
                     <select id="clientFilterContract" onchange="renderClients()">
@@ -216,7 +218,7 @@
                                     <th onclick="sortClients('cableId')">Cable ID</th>
                                     <th onclick="sortClients('contract')">Contrato</th>
                                     <th onclick="sortClients('status')">Estado</th>
-                                    <th onclick="sortClients('phase')">Fase</th>
+
                                 </tr>
                             </thead>
                             <tbody id="clientsBody"></tbody>
