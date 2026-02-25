@@ -95,6 +95,7 @@
 
     // ===== RENDER =====
     function teamsRender() {
+        console.log('teamsRender called, teams:', teamsData.length, 'assignments:', teamsAssignments.length);
         const currentWeek = teamsGetISOWeek(new Date());
         const weeksInYear = teamsGetWeeksInYear(teamsSelectedYear);
         const cellW = 4 * teamsZoomLevel; // rem
@@ -549,7 +550,14 @@
 
     // ===== INIT =====
     window.initTeamsView = async function() {
-        await teamsLoadData();
+        try {
+            await teamsLoadData();
+        } catch(err) {
+            console.error('Teams load error:', err);
+            // DB might need upgrade - try deleting and reopening
+            alert('Error cargando equipos. Intenta recargar la página (Cmd+Shift+R).');
+            return;
+        }
 
         if (!teamsInitialized) {
             teamsInitialized = true;
