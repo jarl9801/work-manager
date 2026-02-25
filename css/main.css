@@ -645,7 +645,7 @@ tr.order-row:hover td { background: rgba(255,255,255,0.04); }
 .badge-SPL { background: rgba(168,85,247,0.15); color: #a855f7; }
 .badge-102 { background: rgba(20,184,166,0.15); color: #14b8a6; }
 .badge-HBG { background: var(--orange-dim); color: var(--orange); }
-.badge-103 { background: var(--yellow-dim); color: var(--yellow); }
+.badge-HAS { background: var(--yellow-dim); color: var(--yellow); }
 .badge-AV { background: rgba(6,182,212,0.15); color: #06b6d4; }
 .badge-MON { background: rgba(236,72,153,0.15); color: #ec4899; }
 .badge-0 { background: rgba(72,72,74,0.3); color: var(--text-tertiary); }

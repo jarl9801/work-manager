@@ -177,11 +177,11 @@ function getFieldValue(obj, fieldNames) {
 // DP normalization
 const PHASE_STATUS_MAP = {
     'Tiefbau':'108', 'Einblasen':'109', 'Spleiße':'SPL', 'Abliefern':'102',
-    'Hausbegehung':'HBG', 'Hausanschluss':'103', 'Arbeitsvorbereitung':'AV', 'Montage':'MON', 'Fertig':'Fertig'
+    'Hausbegehung':'HBG', 'Hausanschluss':'HAS', 'Arbeitsvorbereitung':'AV', 'Montage':'MON', 'Fertig':'Fertig'
 };
 const STATUS_LABELS = {
     '108':'Tiefbau', '109':'Einblasen', 'SPL':'Spleiße', '102':'Abliefern',
-    'HBG':'HBG', '103':'Termin', 'AV':'Arb.Vorb.', 'MON':'Montage', 'Fertig':'Fertig', '0':'—'
+    'HBG':'Hausbegehung', 'HAS':'Hausanschluss', 'AV':'Arb.Vorb.', 'MON':'Montage', 'Fertig':'Fertig', '0':'—'
 };
 function phaseToStatus(phase) {
     const p = (phase || '').trim().replace(/\s+/g,'');
@@ -766,7 +766,7 @@ function renderDashboardProjects() {
     let html = '';
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
         const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', '103':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', 'HAS':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
             if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}"></div>`;
@@ -1073,7 +1073,7 @@ function buildProjectMap() {
     const projMap = {};
     clients.forEach(c => {
         if (!c.projectCode) return;
-        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {'108':0,'109':0,'SPL':0,'102':0,'HBG':0,'103':0,'AV':0,'MON':0,'0':0,'Fertig':0} };
+        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {'108':0,'109':0,'SPL':0,'102':0,'HBG':0,'HAS':0,'AV':0,'MON':0,'0':0,'Fertig':0} };
         projMap[c.projectCode].total++;
         projMap[c.projectCode].dps.add(c.dp);
         const s = c.status in projMap[c.projectCode].statusCounts ? c.status : '0';
@@ -1106,7 +1106,7 @@ function renderProjects() {
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
         const isExpanded = expandedProjects.has(code);
         const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', '103':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', 'HAS':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
             if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}" title="${s}: ${cnt}"></div>`;
