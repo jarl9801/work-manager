@@ -1396,3 +1396,28 @@ input[type=checkbox] { accent-color: var(--blue); width: 16px; height: 16px; cur
     padding:6px 8px; border-radius:8px; color:#fff; font-weight:600; font-size:14px;
     width:100%; height:100%; min-height:40px;
 }
+
+/* Multi-select filters */
+select[multiple] {
+    height: 34px;
+    min-width: 120px;
+    overflow: hidden;
+}
+select[multiple]:focus {
+    height: auto;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    z-index: 100;
+}
+.view-toolbar { position: relative; }
+.btn-small {
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 13px;
+}
+.btn-small:hover { background: var(--red); color: white; }

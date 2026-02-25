@@ -175,21 +175,9 @@ function getFieldValue(obj, fieldNames) {
 }
 
 // DP normalization
-const PHASE_STATUS_MAP = {
-    'Tiefbau':'108', 'Einblasen':'109', 'Spleiße':'SPL', 'Abliefern':'102',
-    'Hausbegehung':'HBG', 'Hausanschluss':'HAS', 'Arbeitsvorbereitung':'AV', 'Montage':'MON', 'Fertig':'Fertig'
-};
-const STATUS_LABELS = {
-    '108':'Tiefbau', '109':'Einblasen', 'SPL':'Spleiße', '102':'Abliefern',
-    'HBG':'Hausbegehung', 'HAS':'Hausanschluss', 'AV':'Arb.Vorb.', 'MON':'Montage', 'Fertig':'Fertig', '0':'—'
-};
-function phaseToStatus(phase) {
-    const p = (phase || '').trim().replace(/\s+/g,'').normalize('NFC');
-    for (const [key, val] of Object.entries(PHASE_STATUS_MAP)) {
-        if (p.toLowerCase().startsWith(key.normalize('NFC').toLowerCase())) return val;
-    }
-    return '0';
-}
+// Status colors for ANSCHLUSSSTATUS (numeric) and Phase (text)
+const ANSCHLUSS_COLORS = { '0':'var(--text-tertiary)','100':'var(--orange)','101':'var(--teal,#14b8a6)','102':'var(--purple,#a855f7)','103':'var(--yellow)','108':'var(--red)','109':'var(--blue)' };
+const PHASE_COLORS = { 'Tiefbau':'var(--red)','Einblasen':'var(--blue)','Spleiße':'var(--purple,#a855f7)','Abliefern':'var(--teal,#14b8a6)','Hausbegehung':'var(--orange)','Hausanschluss':'var(--yellow)','Arbeitsvorbereitung':'var(--cyan,#06b6d4)','Montage':'var(--pink,#ec4899)' };
 
 function normalizeDP(raw) {
     if (!raw) return '';
@@ -381,17 +369,18 @@ async function importClients(objs) {
         const projCode = extractProjectCode(o);
         const dpNorm = normalizeDP(dpFull);
         const grundNA = (o['GrundNA'] || '').trim();
-        let contract = 'R20';
-        if (['R0','R1','R6','R18','R20'].includes(grundNA)) contract = grundNA;
-        const phase = (o['Status'] || o['Anschlussstatus'] || o['Phase'] || o['status'] || '').trim();
-        const status = phaseToStatus(phase);
+        // Skip clients without a valid contract (GrundNA)
+        if (!grundNA) continue;
+        const contract = grundNA; // Show raw: R0, R1, R6, R18, R20
+        const anschluss = (o['ANSCHLUSSSTATUS'] || '').toString().trim(); // Raw numeric status
+        const phase = (o['Status'] || '').trim().replace(/\s+/g,' ').trim(); // Raw phase text
         const existing = existingByAuftrag[auftrag];
         const client = {
             id: existing ? existing.id : undefined,
             auftrag, projektnummer: o['Projektnummer'] || '', projectCode: projCode,
             dp: dpNorm, dpFull, street: o['Straße'] || '', hausnummer: o['Hausnummer'] || '',
             hausnummerZusatz: o['Hausnummernzusatz'] || '', unit: o['Unit'] || '',
-            cableId: o['Cable ID (From TRI)'] || '', contract, status, phase,
+            cableId: o['Cable ID (From TRI)'] || '', contract, anschluss, phase,
             farbeRohre: o['Farbe Rohre'] || '', datumHausanschluss: o['Datum Hausanschluss'] || '',
         };
         if (!existing) { delete client.id; added++; } else { updated++; }
@@ -540,29 +529,9 @@ function findMissingGO(type) {
     return [...new Set(missing)];
 }
 
-// ===== AUTO STATUS UPDATE =====
-async function autoUpdateFromRD() {
-    for (const rd of ordersRD) {
-        const matching = clients.filter(c => c.dp === rd.dp && c.cableId && c.cableId.includes(rd.ka));
-        for (const c of matching) {
-            if (c.status === '108') continue;
-            if (c.status === '109') {
-                const raExists = ordersRA.some(ra => ra.projectCode === rd.projectCode);
-                if (raExists) { c.status = 'SPL'; c.phase = 'Spleiße'; await dbPut('clients', c); }
-            }
-        }
-    }
-}
-
-async function autoUpdateFromFusion() {
-    for (const f of ordersFusion) {
-        const matching = clients.filter(c => c.dp === f.dp);
-        for (const c of matching) {
-            if (c.status === '108') continue;
-            if (['109','0'].includes(c.status)) { c.status = 'SPL'; c.phase = 'Spleiße'; await dbPut('clients', c); }
-        }
-    }
-}
+// ===== AUTO STATUS UPDATE (disabled — status comes from CSV only) =====
+async function autoUpdateFromRD() { /* noop — trust CSV data */ }
+async function autoUpdateFromFusion() { /* noop — trust CSV data */ }
 
 // ===== IMPORT REPORT MODAL =====
 window.closeImportReport = function() { document.getElementById('importReportModal').classList.remove('show'); }
@@ -653,7 +622,7 @@ window.exportData = function() {
     const activeView = document.querySelector('.view.active')?.id;
     if (activeView === 'view-clients') {
         const h = ['Auftrag','Projektnummer','DP','Straße','Hausnummer','CableID','Contract','Status'];
-        const rows = clients.map(c => [c.auftrag,c.projektnummer,c.dp,c.street,c.hausnummer,c.cableId,c.contract,c.status].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+        const rows = clients.map(c => [c.auftrag,c.projektnummer,c.dp,c.street,c.hausnummer,c.cableId,c.contract,c.anschluss,c.phase].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
         csv = [h.join(','), ...rows].join('\n'); filename = 'clients.csv';
     } else if (activeView === 'view-orders') {
         if (currentOrderTab === 'ra') {
@@ -765,11 +734,11 @@ function renderDashboardProjects() {
     const goByDP = buildGoByDP();
     let html = '';
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
-        const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', 'HAS':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const fertigPct = data.total ? Math.round((data.statusCounts["Fertig"]||0) / data.total * 100) : 0;
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
-            if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}"></div>`;
+            const color = PHASE_COLORS[s] || 'var(--green)';
+            if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${color}"></div>`;
         }
         let blowDone = 0, spliceDone = 0;
         data.dps.forEach(dp => {
@@ -819,13 +788,21 @@ function renderProductivityGrid() {
 function updateClientFilters() {
     const projs = [...new Set(clients.map(c => c.projectCode).filter(Boolean))].sort();
     const dps = [...new Set(clients.map(c => c.dp).filter(Boolean))].sort();
-    const pSel = document.getElementById('clientFilterProject');
-    const dSel = document.getElementById('clientFilterDP');
-    if (!pSel || !dSel) return;
-    const pv = pSel.value, dv = dSel.value;
-    pSel.innerHTML = '<option value="">Todos Proyectos</option>' + projs.map(p => `<option value="${p}">${p}</option>`).join('');
-    dSel.innerHTML = '<option value="">Todos DP</option>' + dps.map(d => `<option value="${d}">${d}</option>`).join('');
-    pSel.value = pv; dSel.value = dv;
+    const phases = [...new Set(clients.map(c => c.phase).filter(Boolean))].sort();
+    const anschlusses = [...new Set(clients.map(c => c.anschluss).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
+    const contracts = [...new Set(clients.map(c => c.contract).filter(Boolean))].sort();
+
+    function rebuildMulti(id, items, label) {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = new Set(Array.from(sel.selectedOptions).map(o => o.value));
+        sel.innerHTML = `<option value="">${label}</option>` + items.map(v => `<option value="${v}"${prev.has(v) ? ' selected' : ''}>${v}</option>`).join('');
+    }
+    rebuildMulti('clientFilterProject', projs, 'Todos Proyectos');
+    rebuildMulti('clientFilterDP', dps, 'Todos DP');
+    rebuildMulti('clientFilterPhase', phases, 'Todas Fases');
+    rebuildMulti('clientFilterAnschluss', anschlusses, 'Todos Anschluss');
+    rebuildMulti('clientFilterContract', contracts, 'Todos Contratos');
 }
 
 window.sortClients = function(field) {
@@ -836,16 +813,18 @@ window.sortClients = function(field) {
 
 window.renderClients = function() {
     const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
-    const fp = document.getElementById('clientFilterProject')?.value || '';
-    const fd = document.getElementById('clientFilterDP')?.value || '';
-    const fs = document.getElementById('clientFilterStatus')?.value || '';
-    const fc = document.getElementById('clientFilterContract')?.value || '';
+    const fp = getMultiFilterValues('clientFilterProject');
+    const fd = getMultiFilterValues('clientFilterDP');
+    const fPhase = getMultiFilterValues('clientFilterPhase');
+    const fAnschluss = getMultiFilterValues('clientFilterAnschluss');
+    const fc = getMultiFilterValues('clientFilterContract');
     let filtered = clients.filter(c => {
-        if (search && !`${c.auftrag} ${c.dp} ${c.street} ${c.hausnummer} ${c.cableId}`.toLowerCase().includes(search)) return false;
-        if (fp && c.projectCode !== fp) return false;
-        if (fd && c.dp !== fd) return false;
-        if (fs && c.status !== fs) return false;
-        if (fc && c.contract !== fc) return false;
+        if (search && !`${c.auftrag} ${c.dp} ${c.street} ${c.hausnummer} ${c.cableId} ${c.phase}`.toLowerCase().includes(search)) return false;
+        if (fp.length && !fp.includes(c.projectCode)) return false;
+        if (fd.length && !fd.includes(c.dp)) return false;
+        if (fPhase.length && !fPhase.includes(c.phase)) return false;
+        if (fAnschluss.length && !fAnschluss.includes(c.anschluss)) return false;
+        if (fc.length && !fc.includes(c.contract)) return false;
         return true;
     });
     const f = clientSort.field;
@@ -857,6 +836,8 @@ window.renderClients = function() {
     if (!tbody) return;
     tbody.innerHTML = filtered.length ? filtered.map(c => {
         const addr = `${c.street} ${c.hausnummer}${c.hausnummerZusatz ? ' '+c.hausnummerZusatz : ''}`;
+        const phaseColor = PHASE_COLORS[c.phase] || 'var(--text-tertiary)';
+        const anschlussColor = ANSCHLUSS_COLORS[c.anschluss] || 'var(--text-tertiary)';
         return `<tr>
             <td><strong>${c.projectCode || '—'}</strong></td>
             <td style="font-size:11px">${c.auftrag}</td>
@@ -864,11 +845,29 @@ window.renderClients = function() {
             <td>${addr}</td>
             <td style="font-size:11px">${c.cableId}</td>
             <td><span class="badge badge-${c.contract}">${c.contract}</span></td>
-            <td><span class="badge badge-${c.status}">${STATUS_LABELS[c.status] || c.status}</span></td>
+            <td><span class="badge" style="background:color-mix(in srgb,${anschlussColor} 15%,transparent);color:${anschlussColor}">${c.anschluss || '—'}</span></td>
+            <td><span class="badge" style="background:color-mix(in srgb,${phaseColor} 15%,transparent);color:${phaseColor}">${c.phase || '—'}</span></td>
         </tr>`;
-    }).join('') : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-tertiary)">${t('noData')}</td></tr>`;
+    }).join('') : `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-tertiary)">${t('noData')}</td></tr>`;
     const countEl = document.getElementById('clientCount');
     if (countEl) countEl.textContent = `${filtered.length} / ${clients.length} clientes`;
+}
+
+// Helper: get selected values from a multi-select
+function getMultiFilterValues(id) {
+    const sel = document.getElementById(id);
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions).map(o => o.value).filter(v => v !== '');
+}
+
+window.clearClientFilters = function() {
+    ['clientFilterProject','clientFilterDP','clientFilterPhase','clientFilterAnschluss','clientFilterContract'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) { sel.selectedIndex = 0; Array.from(sel.options).forEach(o => o.selected = o.value === ''); }
+    });
+    const search = document.getElementById('clientSearch');
+    if (search) search.value = '';
+    renderClients();
 }
 
 // ===== ORDERS =====
@@ -1073,11 +1072,11 @@ function buildProjectMap() {
     const projMap = {};
     clients.forEach(c => {
         if (!c.projectCode) return;
-        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {'108':0,'109':0,'SPL':0,'102':0,'HBG':0,'HAS':0,'AV':0,'MON':0,'0':0,'Fertig':0} };
+        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {} };
         projMap[c.projectCode].total++;
         projMap[c.projectCode].dps.add(c.dp);
-        const s = c.status in projMap[c.projectCode].statusCounts ? c.status : '0';
-        projMap[c.projectCode].statusCounts[s]++;
+        const s = c.phase || '—';
+        projMap[c.projectCode].statusCounts[s] = (projMap[c.projectCode].statusCounts[s] || 0) + 1;
     });
     return projMap;
 }
@@ -1105,11 +1104,11 @@ function renderProjects() {
 
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
         const isExpanded = expandedProjects.has(code);
-        const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', 'SPL':'var(--purple,#a855f7)', '102':'var(--teal,#14b8a6)', 'HBG':'var(--orange)', 'HAS':'var(--yellow)', 'AV':'var(--cyan,#06b6d4)', 'MON':'var(--pink,#ec4899)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const fertigPct = data.total ? Math.round((data.statusCounts['Fertig']||0) / data.total * 100) : 0;
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
-            if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}" title="${s}: ${cnt}"></div>`;
+            const color = PHASE_COLORS[s] || 'var(--green)';
+            if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${color}" title="${s}: ${cnt}"></div>`;
         }
 
         let blowDone = 0, spliceAPDone = 0, spliceDPDone = 0;
@@ -1185,7 +1184,7 @@ function renderProjects() {
                 <div class="project-stat"><span>Soplado RD</span><span>${rdCount}</span></div>
                 <div class="project-stat"><span>Fusión</span><span>${fusionCount}</span></div>
             </div>
-            <div class="project-stat" style="margin-top:8px"><span>Fertig</span><span style="color:var(--green)">${data.statusCounts['Fertig']} (${fertigPct}%)</span></div>
+            <div class="project-stat" style="margin-top:8px"><span>Fertig</span><span style="color:var(--green)">${data.statusCounts["Fertig"]||0} (${fertigPct}%)</span></div>
             <div class="progress-bar"><div class="progress-fill" style="width:${fertigPct}%;background:var(--green)"></div></div>
             ${isExpanded ? dpTableHtml : `<div class="dp-expand-hint">${t('clickExpandir')}</div>`}
         </div>`;
