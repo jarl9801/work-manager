@@ -898,18 +898,18 @@ async function saveOrderFromModal() {
 }
 
 // ===== PROJECTS =====
-function navigateTo(view) {
+window.navigateTo = function(view) {
     const navItem = document.querySelector(`[data-view="${view}"]`);
     if (navItem) navItem.click();
-}
+};
 
-function toggleProject(code) {
+window.toggleProject = function(code) {
     if (expandedProjects.has(code)) expandedProjects.delete(code);
     else expandedProjects.add(code);
     renderProjects();
 }
 
-function filterDPTable(safeCode) {
+window.filterDPTable = function(safeCode) {
     const search = (document.getElementById(`dpSearch_${safeCode}`)?.value || '').toLowerCase();
     const blowF = document.getElementById(`dpFilterBlow_${safeCode}`)?.value || '';
     const spliceAPF = document.getElementById(`dpFilterSpliceAP_${safeCode}`)?.value || '';
