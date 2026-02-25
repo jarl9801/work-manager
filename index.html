@@ -179,13 +179,13 @@
 
             <!-- ==================== CLIENTS ==================== -->
             <div id="view-clients" class="view">
-                <div class="view-toolbar" style="flex-wrap:wrap;gap:6px">
-                    <input type="text" id="clientSearch" placeholder="Buscar..." oninput="renderClients()" style="min-width:180px">
-                    <select id="clientFilterProject" multiple size="1" onchange="renderClients()" title="Ctrl+click para múltiples"><option value="">Todos Proyectos</option></select>
-                    <select id="clientFilterDP" multiple size="1" onchange="renderClients()" title="Ctrl+click para múltiples"><option value="">Todos DP</option></select>
-                    <select id="clientFilterPhase" multiple size="1" onchange="renderClients()" title="Ctrl+click para múltiples"><option value="">Todas Fases</option></select>
-                    <select id="clientFilterAnschluss" multiple size="1" onchange="renderClients()" title="Ctrl+click para múltiples"><option value="">Todos Anschluss</option></select>
-                    <select id="clientFilterContract" multiple size="1" onchange="renderClients()" title="Ctrl+click para múltiples"><option value="">Todos Contratos</option></select>
+                <div class="view-toolbar" style="flex-wrap:wrap;gap:6px;align-items:center">
+                    <input type="text" id="clientSearch" placeholder="Buscar..." oninput="renderClients()" style="min-width:160px">
+                    <div class="filter-drop" id="filterDrop_project"><button class="filter-btn" onclick="toggleFilterDrop('project')">Proyecto <span class="filter-count"></span>▾</button><div class="filter-menu" id="filterMenu_project"></div></div>
+                    <div class="filter-drop" id="filterDrop_dp"><button class="filter-btn" onclick="toggleFilterDrop('dp')">DP <span class="filter-count"></span>▾</button><div class="filter-menu" id="filterMenu_dp"></div></div>
+                    <div class="filter-drop" id="filterDrop_phase"><button class="filter-btn" onclick="toggleFilterDrop('phase')">Fase <span class="filter-count"></span>▾</button><div class="filter-menu" id="filterMenu_phase"></div></div>
+                    <div class="filter-drop" id="filterDrop_anschluss"><button class="filter-btn" onclick="toggleFilterDrop('anschluss')">Anschluss <span class="filter-count"></span>▾</button><div class="filter-menu" id="filterMenu_anschluss"></div></div>
+                    <div class="filter-drop" id="filterDrop_contract"><button class="filter-btn" onclick="toggleFilterDrop('contract')">Contrato <span class="filter-count"></span>▾</button><div class="filter-menu" id="filterMenu_contract"></div></div>
                     <button class="btn-small" onclick="clearClientFilters()" title="Limpiar filtros">✕</button>
                     <span class="toolbar-count" id="clientCount">0 clientes</span>
                 </div>

@@ -791,18 +791,11 @@ function updateClientFilters() {
     const phases = [...new Set(clients.map(c => c.phase).filter(Boolean))].sort();
     const anschlusses = [...new Set(clients.map(c => c.anschluss).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
     const contracts = [...new Set(clients.map(c => c.contract).filter(Boolean))].sort();
-
-    function rebuildMulti(id, items, label) {
-        const sel = document.getElementById(id);
-        if (!sel) return;
-        const prev = new Set(Array.from(sel.selectedOptions).map(o => o.value));
-        sel.innerHTML = `<option value="">${label}</option>` + items.map(v => `<option value="${v}"${prev.has(v) ? ' selected' : ''}>${v}</option>`).join('');
-    }
-    rebuildMulti('clientFilterProject', projs, 'Todos Proyectos');
-    rebuildMulti('clientFilterDP', dps, 'Todos DP');
-    rebuildMulti('clientFilterPhase', phases, 'Todas Fases');
-    rebuildMulti('clientFilterAnschluss', anschlusses, 'Todos Anschluss');
-    rebuildMulti('clientFilterContract', contracts, 'Todos Contratos');
+    buildFilterMenu('project', projs);
+    buildFilterMenu('dp', dps);
+    buildFilterMenu('phase', phases);
+    buildFilterMenu('anschluss', anschlusses);
+    buildFilterMenu('contract', contracts);
 }
 
 window.sortClients = function(field) {
@@ -813,11 +806,11 @@ window.sortClients = function(field) {
 
 window.renderClients = function() {
     const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
-    const fp = getMultiFilterValues('clientFilterProject');
-    const fd = getMultiFilterValues('clientFilterDP');
-    const fPhase = getMultiFilterValues('clientFilterPhase');
-    const fAnschluss = getMultiFilterValues('clientFilterAnschluss');
-    const fc = getMultiFilterValues('clientFilterContract');
+    const fp = getFilterValues('project');
+    const fd = getFilterValues('dp');
+    const fPhase = getFilterValues('phase');
+    const fAnschluss = getFilterValues('anschluss');
+    const fc = getFilterValues('contract');
     let filtered = clients.filter(c => {
         if (search && !`${c.auftrag} ${c.dp} ${c.street} ${c.hausnummer} ${c.cableId} ${c.phase}`.toLowerCase().includes(search)) return false;
         if (fp.length && !fp.includes(c.projectCode)) return false;
@@ -853,18 +846,51 @@ window.renderClients = function() {
     if (countEl) countEl.textContent = `${filtered.length} / ${clients.length} clientes`;
 }
 
-// Helper: get selected values from a multi-select
-function getMultiFilterValues(id) {
-    const sel = document.getElementById(id);
-    if (!sel) return [];
-    return Array.from(sel.selectedOptions).map(o => o.value).filter(v => v !== '');
+// ===== DROPDOWN CHECKBOX FILTERS =====
+const _filterSelections = { project: new Set(), dp: new Set(), phase: new Set(), anschluss: new Set(), contract: new Set() };
+
+window.toggleFilterDrop = function(name) {
+    document.querySelectorAll('.filter-menu').forEach(m => { if (m.id !== 'filterMenu_'+name) m.classList.remove('open'); });
+    document.getElementById('filterMenu_'+name)?.classList.toggle('open');
 }
 
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+    if (!e.target.closest('.filter-drop')) document.querySelectorAll('.filter-menu').forEach(m => m.classList.remove('open'));
+});
+
+function buildFilterMenu(name, items) {
+    const menu = document.getElementById('filterMenu_'+name);
+    if (!menu) return;
+    const sel = _filterSelections[name];
+    menu.innerHTML = items.map(v =>
+        `<label><input type="checkbox" value="${v}" ${sel.has(v)?'checked':''} onchange="onFilterCheck('${name}',this)">${v}</label>`
+    ).join('');
+    updateFilterBtnLabel(name);
+}
+
+window.onFilterCheck = function(name, cb) {
+    if (cb.checked) _filterSelections[name].add(cb.value);
+    else _filterSelections[name].delete(cb.value);
+    updateFilterBtnLabel(name);
+    renderClients();
+}
+
+function updateFilterBtnLabel(name) {
+    const btn = document.querySelector('#filterDrop_'+name+' .filter-btn');
+    if (!btn) return;
+    const cnt = _filterSelections[name].size;
+    const countSpan = btn.querySelector('.filter-count');
+    if (countSpan) countSpan.textContent = cnt > 0 ? cnt : '';
+    btn.classList.toggle('active', cnt > 0);
+}
+
+function getFilterValues(name) { return [..._filterSelections[name]]; }
+
 window.clearClientFilters = function() {
-    ['clientFilterProject','clientFilterDP','clientFilterPhase','clientFilterAnschluss','clientFilterContract'].forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel) { sel.selectedIndex = 0; Array.from(sel.options).forEach(o => o.selected = o.value === ''); }
-    });
+    Object.keys(_filterSelections).forEach(k => _filterSelections[k].clear());
+    document.querySelectorAll('.filter-menu input[type="checkbox"]').forEach(cb => cb.checked = false);
+    Object.keys(_filterSelections).forEach(updateFilterBtnLabel);
     const search = document.getElementById('clientSearch');
     if (search) search.value = '';
     renderClients();
