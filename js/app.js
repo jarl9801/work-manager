@@ -195,6 +195,101 @@ function detectCSVType(headers) {
     return null;
 }
 
+// ===== SYNC FROM GOOGLE SHEETS (via GitHub Pages JSON) =====
+const SHEETS_JSON_URL = 'https://jarl9801.github.io/work-manager/data/sheets.json';
+
+window.syncFromSheets = async function() {
+    const btn = document.getElementById('syncSheetsBtn');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Sincronizando...';
+    try {
+        const resp = await fetch(SHEETS_JSON_URL + '?t=' + Date.now());
+        if (!resp.ok) throw new Error('No se pudo descargar datos: ' + resp.status);
+        const data = await resp.json();
+
+        let imported = { ra: 0, rd: 0, fusion: 0 };
+
+        // Import Soplado RA
+        if (data.soplado_ra && data.soplado_ra.length > 0) {
+            await dbClear('orders_ra');
+            for (const o of data.soplado_ra) {
+                const projCode = o['Código de Proyecto'] || o['Codigo de Proyecto'] || '';
+                await dbPut('orders_ra', {
+                    timestamp: o['Timestamp'] || '',
+                    projectCode: projCode,
+                    technician: o['Técnico Responsable'] || o['Tecnico Responsable'] || '',
+                    startDate: o['Fecha de Inicio'] || '',
+                    endDate: o['Fecha de Finalización'] || o['Fecha de Finalizacion'] || '',
+                    fibers: o['Número de Fibras'] || o['Numero de Fibras'] || '',
+                    meters: o['Metros Soplados'] || '',
+                    color: o['Color miniducto'] || '',
+                    incidents: o['Incidencias (si las hubo)'] || '',
+                    photos: o['Fotos del Trabajo'] || ''
+                });
+            }
+            imported.ra = data.soplado_ra.length;
+        }
+
+        // Import Soplado RD
+        if (data.soplado_rd && data.soplado_rd.length > 0) {
+            await dbClear('orders_rd');
+            for (const o of data.soplado_rd) {
+                const projCode = o['Código de Proyecto'] || o['Codigo de Proyecto'] || '';
+                const dp = normalizeDP(o['DP'] || '');
+                await dbPut('orders_rd', {
+                    timestamp: o['Timestamp'] || '',
+                    projectCode: projCode,
+                    dp,
+                    street: o['Calle'] || '',
+                    ka: o['KA cliente'] || '',
+                    technician: o['Técnico Responsable'] || o['Tecnico Responsable'] || '',
+                    startDate: o['Fecha de Inicio'] || '',
+                    endDate: o['Fecha de Finalización'] || o['Fecha de Finalizacion'] || '',
+                    meters: o['Metros Soplados'] || '',
+                    color: o['Color miniducto'] || '',
+                    incidents: o['Incidencias (si las hubo)'] || '',
+                    photos: o['Fotos del Trabajo'] || '',
+                    fibers: o['Número de Fibras'] || o['Numero de Fibras'] || '',
+                });
+            }
+            imported.rd = data.soplado_rd.length;
+        }
+
+        // Import Fusiones
+        if (data.fusion && data.fusion.length > 0) {
+            await dbClear('orders_fusion');
+            for (const o of data.fusion) {
+                const projCode = o['Código de Proyecto'] || o['Codigo de Proyecto'] || '';
+                const dp = normalizeDP(o['DP'] || '');
+                await dbPut('orders_fusion', {
+                    timestamp: o['Timestamp'] || '',
+                    projectCode: projCode,
+                    dp,
+                    technician: o['Técnico Responsable'] || o['Tecnico Responsable'] || '',
+                    startDate: o['Fecha de Inicio'] || '',
+                    endDate: o['Fecha de Finalización'] || o['Fecha de Finalizacion'] || '',
+                    splices: o['Fusiones'] || '',
+                    incidents: o['Incidencias (si las hubo)'] || '',
+                    photos: o['Fotos del Trabajo'] || '',
+                    photoRegistry: o['Registro Fotografico'] || ''
+                });
+            }
+            imported.fusion = data.fusion.length;
+        }
+
+        await loadAll();
+        renderAll();
+        toast(`✅ Sync OK — RA: ${imported.ra} | RD: ${imported.rd} | Fusión: ${imported.fusion} (${new Date(data.updated).toLocaleString()})`);
+    } catch (err) {
+        console.error('Sync error:', err);
+        toast('❌ Error sync: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+    }
+};
+
 window.smartImport = async function(input) {
     const files = input.files;
     if (!files.length) return;
