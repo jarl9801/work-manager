@@ -327,27 +327,61 @@
                 <div id="projectsGrid" class="project-grid"></div>
             </div>
 
-            <!-- ==================== INVOICING ==================== -->
+            <!-- ==================== CERTIFICACIÓN & FACTURACIÓN ==================== -->
             <div id="view-invoicing" class="view">
-                <div id="invoiceTotals" class="invoice-totals"></div>
-                <div class="table-container">
-                    <div class="table-toolbar">
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <input type="checkbox" id="invSelectAll" onchange="toggleAllInv(this)">
-                            <span style="font-size:13px;color:var(--text-secondary);">Seleccionar todo</span>
-                        </div>
-                        <button class="btn btn-primary btn-sm" id="markInvoicedBtn" style="display:none;" onclick="markInvoiced()">
-                            💶 Marcar Facturado
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="exportData()">📥 Exportar</button>
+                <div id="certTotals" class="invoice-totals"></div>
+
+                <!-- Tabs -->
+                <div class="tabs" style="margin-bottom:16px;">
+                    <div class="tab active" data-certtab="pending" onclick="switchCertTab('pending')">⏳ Pendiente Certificar</div>
+                    <div class="tab" data-certtab="certified" onclick="switchCertTab('certified')">✅ Certificado</div>
+                    <div class="tab" data-certtab="invoiced" onclick="switchCertTab('invoiced')">💶 Facturado</div>
+                </div>
+
+                <!-- Filters -->
+                <div class="view-toolbar" style="margin-bottom:12px;">
+                    <select id="certFilterProject" onchange="renderCertification()"><option value="">Todos Proyectos</option></select>
+                    <select id="certFilterType" onchange="renderCertification()">
+                        <option value="">Todos Tipos</option>
+                        <option value="rd">Soplado RD</option>
+                        <option value="ra">Soplado RA</option>
+                        <option value="fusion">Fusión</option>
+                    </select>
+                    <span id="certCount" style="font-size:12px;color:var(--text-secondary);margin-left:auto;"></span>
+                </div>
+
+                <!-- Actions bar -->
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;" id="certActions">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="checkbox" id="certSelectAll" onchange="toggleAllCert(this)">
+                        <span style="font-size:13px;color:var(--text-secondary);">Seleccionar todo</span>
                     </div>
+                    <button class="btn btn-primary btn-sm" id="markCertifiedBtn" style="display:none;" onclick="markCertified()">
+                        ✅ Marcar Certificado
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="markInvoicedBtn2" style="display:none;" onclick="markInvoicedNew()">
+                        💶 Marcar Facturado
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportCertReport()">📄 Exportar Informe</button>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
                     <div class="table-scroll">
                         <table>
                             <thead><tr>
                                 <th class="check-col"></th>
-                                <th>Proyecto</th><th>Dirección</th><th>Uds</th><th>Estado</th><th>Fecha Cert.</th>
+                                <th>Tipo</th>
+                                <th>Proyecto</th>
+                                <th>DP</th>
+                                <th>Técnico</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unit.</th>
+                                <th>Monto (€)</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
                             </tr></thead>
-                            <tbody id="invoiceBody"></tbody>
+                            <tbody id="certBody"></tbody>
                         </table>
                     </div>
                 </div>

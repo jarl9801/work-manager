@@ -12,6 +12,7 @@ let ordersFusion = [];
 let projects = [];
 let goStatus = [];
 let legacyOrders = [];
+let certificationStatus = {}; // key: "type|projectCode|dp" → { certified: bool, certDate, invoiced, invNumber, invDate }
 let clientSort = { field: 'dp', dir: 1 };
 let currentOrderTab = 'ra';
 let editingOrderType = null;
@@ -21,10 +22,10 @@ let expandedProjects = new Set();
 // ===== DATABASE =====
 function openDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open('WorkManagerDB', 3);
+        const req = indexedDB.open('WorkManagerDB', 4);
         req.onupgradeneeded = e => {
             const d = e.target.result;
-            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status'].forEach(s => {
+            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status','certification'].forEach(s => {
                 if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath:'id', autoIncrement:true });
             });
         };
@@ -54,6 +55,10 @@ async function loadAll() {
     projects = await dbGetAll('projects');
     goStatus = await dbGetAll('go_status');
     legacyOrders = await dbGetAll('orders');
+    // Load certification status into map
+    const certRecords = await dbGetAll('certification');
+    certificationStatus = {};
+    certRecords.forEach(c => { certificationStatus[c.key] = c; });
 }
 
 // ===== i18n =====
@@ -643,7 +648,7 @@ function renderAll() {
     renderClients();
     renderOrders();
     renderProjects();
-    renderInvoicing();
+    renderCertification();
     renderPrices();
     updateClientFilters();
 }
@@ -1155,48 +1160,243 @@ function renderProjects() {
     document.getElementById('projectsGrid').innerHTML = html || `<p style="color:var(--text-tertiary);text-align:center;padding:40px">${t('noData')} — Importa un CSV de clientes para ver proyectos.</p>`;
 }
 
-// ===== INVOICING =====
-function renderInvoicing() {
-    const certNotInv = legacyOrders.filter(o => o.status === 'certified');
-    const invoiced = legacyOrders.filter(o => o.status === 'invoiced');
-    const totalOrders = ordersRD.length + ordersRA.length + ordersFusion.length;
+// ===== CERTIFICATION & INVOICING =====
+let currentCertTab = 'pending';
 
-    document.getElementById('invoiceTotals').innerHTML = `
-        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--purple)">${certNotInv.length}</div><div class="invoice-total-label">${t('certNotInv')}</div></div>
-        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--green)">${invoiced.length}</div><div class="invoice-total-label">${t('totalInvoiced')}</div></div>
-        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--blue)">${totalOrders}</div><div class="invoice-total-label">Total Órdenes</div></div>
-        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--cyan)">${clients.length}</div><div class="invoice-total-label">Clientes</div></div>
+function buildWorkItems() {
+    // Build a unified list of all billable work items with prices
+    const items = [];
+
+    // Soplado RD: price per meter (BLOW_001 = 0.43€/ML)
+    const rdPrice = PRICE_LIST.find(p => p.code === 'BLOW_001');
+    ordersRD.forEach(o => {
+        const key = `rd|${o.projectCode}|${o.dp}`;
+        const meters = parseFloat(o.meters) || 0;
+        const unitPrice = rdPrice ? rdPrice.sale : 0.43;
+        const cert = certificationStatus[key];
+        items.push({
+            key, type: 'rd', label: 'Soplado RD',
+            projectCode: o.projectCode, dp: o.dp,
+            technician: o.technician || '', date: o.endDate || o.startDate || o.timestamp || '',
+            quantity: meters, unit: 'ML', unitPrice,
+            amount: Math.round(meters * unitPrice * 100) / 100,
+            certified: cert?.certified || false, certDate: cert?.certDate || '',
+            invoiced: cert?.invoiced || false, invNumber: cert?.invNumber || '', invDate: cert?.invDate || ''
+        });
+    });
+
+    // Soplado RA: price per meter (BLOW_002 = 0.62€/ML)
+    const raPrice = PRICE_LIST.find(p => p.code === 'BLOW_002');
+    ordersRA.forEach(o => {
+        const key = `ra|${o.projectCode}|${o.timestamp}`;
+        const meters = parseFloat(o.meters) || 0;
+        const unitPrice = raPrice ? raPrice.sale : 0.62;
+        const cert = certificationStatus[key];
+        items.push({
+            key, type: 'ra', label: 'Soplado RA',
+            projectCode: o.projectCode, dp: '—',
+            technician: o.technician || '', date: o.endDate || o.startDate || o.timestamp || '',
+            quantity: meters, unit: 'ML', unitPrice,
+            amount: Math.round(meters * unitPrice * 100) / 100,
+            certified: cert?.certified || false, certDate: cert?.certDate || '',
+            invoiced: cert?.invoiced || false, invNumber: cert?.invNumber || '', invDate: cert?.invDate || ''
+        });
+    });
+
+    // Fusiones: price per DP (BLOW_003 = 705€/UDS)
+    const fusionPrice = PRICE_LIST.find(p => p.code === 'BLOW_003');
+    ordersFusion.forEach(o => {
+        const key = `fusion|${o.projectCode}|${o.dp}`;
+        const splices = parseFloat(o.splices) || 1;
+        const unitPrice = fusionPrice ? fusionPrice.sale : 705;
+        const cert = certificationStatus[key];
+        items.push({
+            key, type: 'fusion', label: 'Fusión DP',
+            projectCode: o.projectCode, dp: o.dp,
+            technician: o.technician || '', date: o.endDate || o.startDate || o.timestamp || '',
+            quantity: 1, unit: 'UDS', unitPrice,
+            amount: unitPrice,
+            certified: cert?.certified || false, certDate: cert?.certDate || '',
+            invoiced: cert?.invoiced || false, invNumber: cert?.invNumber || '', invDate: cert?.invDate || '',
+            splices
+        });
+    });
+
+    return items;
+}
+
+window.switchCertTab = function(tab) {
+    currentCertTab = tab;
+    document.querySelectorAll('[data-certtab]').forEach(t => t.classList.toggle('active', t.dataset.certtab === tab));
+    document.getElementById('certSelectAll').checked = false;
+    renderCertification();
+};
+
+function renderCertification() {
+    const items = buildWorkItems();
+    const fp = document.getElementById('certFilterProject')?.value || '';
+    const ft = document.getElementById('certFilterType')?.value || '';
+
+    // Populate project filter
+    const projs = [...new Set(items.map(i => i.projectCode).filter(Boolean))].sort();
+    const pSel = document.getElementById('certFilterProject');
+    if (pSel) {
+        const pv = pSel.value;
+        pSel.innerHTML = '<option value="">Todos Proyectos</option>' + projs.map(p => `<option value="${p}">${p}</option>`).join('');
+        pSel.value = pv;
+    }
+
+    // Filter by tab
+    let filtered = items.filter(i => {
+        if (currentCertTab === 'pending') return !i.certified && !i.invoiced;
+        if (currentCertTab === 'certified') return i.certified && !i.invoiced;
+        if (currentCertTab === 'invoiced') return i.invoiced;
+        return true;
+    });
+
+    // Apply filters
+    if (fp) filtered = filtered.filter(i => i.projectCode === fp);
+    if (ft) filtered = filtered.filter(i => i.type === ft);
+
+    // Totals
+    const allPending = items.filter(i => !i.certified && !i.invoiced);
+    const allCertified = items.filter(i => i.certified && !i.invoiced);
+    const allInvoiced = items.filter(i => i.invoiced);
+    const pendingAmount = allPending.reduce((s, i) => s + i.amount, 0);
+    const certifiedAmount = allCertified.reduce((s, i) => s + i.amount, 0);
+    const invoicedAmount = allInvoiced.reduce((s, i) => s + i.amount, 0);
+
+    document.getElementById('certTotals').innerHTML = `
+        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--orange)">${allPending.length}</div><div class="invoice-total-label">Pendiente Certificar</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">€${pendingAmount.toLocaleString('de-DE', {minimumFractionDigits:2})}</div></div>
+        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--purple)">${allCertified.length}</div><div class="invoice-total-label">Certificado</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">€${certifiedAmount.toLocaleString('de-DE', {minimumFractionDigits:2})}</div></div>
+        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--green)">${allInvoiced.length}</div><div class="invoice-total-label">Facturado</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">€${invoicedAmount.toLocaleString('de-DE', {minimumFractionDigits:2})}</div></div>
+        <div class="invoice-total-card"><div class="invoice-total-value" style="color:var(--cyan)">${items.length}</div><div class="invoice-total-label">Total Trabajos</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px">€${(pendingAmount+certifiedAmount+invoicedAmount).toLocaleString('de-DE', {minimumFractionDigits:2})}</div></div>
     `;
 
-    const tbody = document.getElementById('invoiceBody');
-    tbody.innerHTML = certNotInv.length ? certNotInv.map(o => `<tr>
-        <td class="check-col"><input type="checkbox" class="inv-check" data-id="${o.id}"></td>
-        <td>${o.project||''}</td><td>${o.address||''}</td><td>${o.units||1}</td>
-        <td><span class="badge badge-certified">Certificado</span></td><td>${o.certified_date||''}</td>
-    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-tertiary)">Sin órdenes certificadas pendientes</td></tr>`;
+    // Show/hide action buttons based on tab
+    const certBtn = document.getElementById('markCertifiedBtn');
+    const invBtn = document.getElementById('markInvoicedBtn2');
+    if (certBtn) certBtn.style.display = 'none';
+    if (invBtn) invBtn.style.display = 'none';
 
-    document.querySelectorAll('.inv-check').forEach(cb => cb.addEventListener('change', () => {
-        document.getElementById('markInvoicedBtn').style.display = document.querySelectorAll('.inv-check:checked').length > 0 ? '' : 'none';
+    const filteredAmount = filtered.reduce((s, i) => s + i.amount, 0);
+    const countEl = document.getElementById('certCount');
+    if (countEl) countEl.textContent = `${filtered.length} trabajos — €${filteredAmount.toLocaleString('de-DE', {minimumFractionDigits:2})}`;
+
+    // Render table
+    const tbody = document.getElementById('certBody');
+    if (!tbody) return;
+
+    const typeColors = { rd: 'var(--blue)', ra: 'var(--cyan)', fusion: 'var(--orange)' };
+
+    tbody.innerHTML = filtered.length ? filtered.map(i => {
+        const statusBadge = i.invoiced
+            ? `<span class="badge badge-invoiced">💶 ${i.invNumber || 'Facturado'}</span>`
+            : i.certified
+            ? `<span class="badge badge-certified">✅ Certificado</span>`
+            : `<span class="badge badge-pending">⏳ Pendiente</span>`;
+        const dateShow = i.invoiced ? i.invDate : i.certified ? i.certDate : i.date;
+        return `<tr>
+            <td class="check-col"><input type="checkbox" class="cert-check" data-key="${i.key}"></td>
+            <td><span style="color:${typeColors[i.type]};font-weight:600;font-size:11px">${i.label}</span></td>
+            <td><strong>${i.projectCode}</strong></td>
+            <td>${i.dp}</td>
+            <td>${i.technician}</td>
+            <td>${i.quantity}${i.splices ? ` (${i.splices} emp.)` : ''} ${i.unit}</td>
+            <td>€${i.unitPrice}</td>
+            <td style="font-weight:600">€${i.amount.toLocaleString('de-DE', {minimumFractionDigits:2})}</td>
+            <td>${statusBadge}</td>
+            <td style="font-size:12px">${dateShow}</td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-tertiary)">Sin trabajos en esta categoría</td></tr>`;
+
+    // Checkbox listeners
+    document.querySelectorAll('.cert-check').forEach(cb => cb.addEventListener('change', () => {
+        const checked = document.querySelectorAll('.cert-check:checked').length;
+        if (currentCertTab === 'pending' && certBtn) certBtn.style.display = checked > 0 ? '' : 'none';
+        if (currentCertTab === 'certified' && invBtn) invBtn.style.display = checked > 0 ? '' : 'none';
     }));
 }
 
-window.toggleAllInv = function(master) {
-    document.querySelectorAll('.inv-check').forEach(cb => cb.checked = master.checked);
-    document.getElementById('markInvoicedBtn').style.display = document.querySelectorAll('.inv-check:checked').length > 0 ? '' : 'none';
-}
+window.toggleAllCert = function(master) {
+    document.querySelectorAll('.cert-check').forEach(cb => cb.checked = master.checked);
+    const checked = document.querySelectorAll('.cert-check:checked').length;
+    const certBtn = document.getElementById('markCertifiedBtn');
+    const invBtn = document.getElementById('markInvoicedBtn2');
+    if (currentCertTab === 'pending' && certBtn) certBtn.style.display = checked > 0 ? '' : 'none';
+    if (currentCertTab === 'certified' && invBtn) invBtn.style.display = checked > 0 ? '' : 'none';
+};
 
-window.markInvoiced = async function() {
-    const ids = [...document.querySelectorAll('.inv-check:checked')].map(cb => parseInt(cb.dataset.id));
-    if (!ids.length) return;
-    const invNum = prompt('Nº Factura:');
-    if (!invNum) return;
-    for (const id of ids) {
-        const o = legacyOrders.find(x => x.id === id);
-        if (o) { o.status = 'invoiced'; o.invoice_number = invNum; await dbPut('orders', o); }
+window.markCertified = async function() {
+    const keys = [...document.querySelectorAll('.cert-check:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    const certDate = new Date().toISOString().split('T')[0];
+    for (const key of keys) {
+        const existing = certificationStatus[key];
+        const record = existing ? { ...existing, certified: true, certDate } : { key, certified: true, certDate, invoiced: false, invNumber: '', invDate: '' };
+        if (existing?.id) record.id = existing.id;
+        await dbPut('certification', record);
     }
-    await loadAll(); renderAll();
-    toast(`✅ ${ids.length} marcados como facturados`);
-}
+    await loadAll();
+    renderCertification();
+    toast(`✅ ${keys.length} trabajos marcados como certificados`);
+};
+
+window.markInvoicedNew = async function() {
+    const keys = [...document.querySelectorAll('.cert-check:checked')].map(cb => cb.dataset.key);
+    if (!keys.length) return;
+    const invNumber = prompt('Nº Factura:');
+    if (!invNumber) return;
+    const invDate = new Date().toISOString().split('T')[0];
+    for (const key of keys) {
+        const existing = certificationStatus[key];
+        const record = existing ? { ...existing, invoiced: true, invNumber, invDate } : { key, certified: true, certDate: invDate, invoiced: true, invNumber, invDate };
+        if (existing?.id) record.id = existing.id;
+        await dbPut('certification', record);
+    }
+    await loadAll();
+    renderCertification();
+    toast(`✅ ${keys.length} trabajos marcados como facturados (${invNumber})`);
+};
+
+window.exportCertReport = function() {
+    const items = buildWorkItems();
+    const fp = document.getElementById('certFilterProject')?.value || '';
+    const ft = document.getElementById('certFilterType')?.value || '';
+
+    let filtered = items.filter(i => {
+        if (currentCertTab === 'pending') return !i.certified && !i.invoiced;
+        if (currentCertTab === 'certified') return i.certified && !i.invoiced;
+        if (currentCertTab === 'invoiced') return i.invoiced;
+        return true;
+    });
+    if (fp) filtered = filtered.filter(i => i.projectCode === fp);
+    if (ft) filtered = filtered.filter(i => i.type === ft);
+
+    const tabLabel = currentCertTab === 'pending' ? 'Pendiente_Certificar' : currentCertTab === 'certified' ? 'Certificado' : 'Facturado';
+    const totalAmount = filtered.reduce((s, i) => s + i.amount, 0);
+
+    // CSV export
+    const headers = ['Tipo','Proyecto','DP','Técnico','Cantidad','Unidad','Precio Unit.','Monto (€)','Estado','Fecha','Nº Factura'];
+    const rows = filtered.map(i => [
+        i.label, i.projectCode, i.dp, i.technician,
+        i.quantity, i.unit, i.unitPrice, i.amount.toFixed(2),
+        i.invoiced ? 'Facturado' : i.certified ? 'Certificado' : 'Pendiente',
+        i.invoiced ? i.invDate : i.certified ? i.certDate : i.date,
+        i.invNumber || ''
+    ].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+
+    // Add total row
+    rows.push(`"","","","","","","","${totalAmount.toFixed(2)}","TOTAL","",""`);
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Informe_${tabLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast(`📄 Informe exportado: ${filtered.length} trabajos — €${totalAmount.toLocaleString('de-DE', {minimumFractionDigits:2})}`);
+};
 
 // ===== PRICES =====
 function renderPrices() {
