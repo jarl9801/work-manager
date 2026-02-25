@@ -48,6 +48,10 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 <span data-t="navProjects">Proyectos</span>
             </a>
+            <a class="nav-item" data-view="teams">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span data-t="navTeams">Equipos</span>
+            </a>
             <a class="nav-item" data-view="invoicing">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 <span data-t="navInvoicing">Facturación</span>
@@ -387,6 +391,86 @@
                 </div>
             </div>
 
+            <!-- ==================== EQUIPOS (GANTT) ==================== -->
+            <div id="view-teams" class="view">
+                <!-- Controls -->
+                <div class="teams-controls">
+                    <div class="teams-controls-left">
+                        <div class="teams-control-item">
+                            <label for="teams-year-selector" class="teams-control-label">Año:</label>
+                            <select id="teams-year-selector" class="teams-select"></select>
+                        </div>
+                    </div>
+                    <div class="teams-controls-center">
+                        <button class="btn btn-sm btn-secondary" onclick="window.teamsZoomOut()" title="Reducir zoom">🔍−</button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.teamsZoomIn()" title="Aumentar zoom">🔍+</button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.teamsScrollToToday()" title="Ir a hoy">📍 Hoy</button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.teamsExportCSV()" title="Exportar CSV">📥 CSV</button>
+                    </div>
+                    <div class="teams-controls-right">
+                        <input type="text" id="teams-new-name" placeholder="Nuevo equipo..." class="teams-input" maxlength="50">
+                        <button class="btn btn-sm btn-primary" onclick="window.teamsAddTeam()">+ Equipo</button>
+                    </div>
+                </div>
+
+                <!-- Gantt Chart -->
+                <div id="teams-gantt-container" class="teams-gantt-container">
+                    <div id="teams-gantt-header" class="teams-gantt-header">
+                        <div class="teams-label-header">
+                            <span>👥 Equipos</span>
+                            <span id="teams-count" class="teams-count-badge">0</span>
+                        </div>
+                        <div class="teams-timeline-header custom-scrollbar">
+                            <div id="teams-months" class="teams-months"></div>
+                            <div id="teams-weeks" class="teams-weeks"></div>
+                        </div>
+                    </div>
+                    <div id="teams-gantt-body"></div>
+                    <div id="teams-empty-state" class="teams-empty-state">
+                        <div>👥</div>
+                        <h3>No hay equipos</h3>
+                        <p>Agrega tu primer equipo para organizar proyectos.</p>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="teams-stats">
+                    <span id="teams-stats-text">Cargando...</span>
+                </div>
+            </div>
+
+            <!-- Teams Assignment Modal -->
+            <div id="teams-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)window.teamsCloseModal()">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 id="teams-modal-title">Nueva Asignación</h2>
+                        <button class="modal-close" onclick="window.teamsCloseModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="margin-bottom:12px;">
+                            <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--text-secondary);">Nombre del proyecto</label>
+                            <input type="text" id="teams-assignment-text" placeholder="Ej: Proyecto Fénix" maxlength="100" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:14px;">
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                            <div>
+                                <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--text-secondary);">Progreso</label>
+                                <input type="range" id="teams-assignment-progress" min="0" max="100" value="0" style="width:100%;">
+                                <div style="text-align:center;font-size:12px;color:var(--text-secondary);" id="teams-progress-label">0%</div>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:13px;margin-bottom:4px;color:var(--text-secondary);">Color</label>
+                                <input type="color" id="teams-assignment-color" value="#30d158" style="width:100%;height:38px;border:none;border-radius:8px;cursor:pointer;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="window.teamsCloseModal()">Cancelar</button>
+                        <button class="btn btn-danger" id="teams-delete-btn" onclick="window.teamsDeleteAssignment()" style="display:none;">🗑️ Eliminar</button>
+                        <button class="btn btn-primary" onclick="window.teamsSaveAssignment()">Guardar</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- ==================== PRICES ==================== -->
             <div id="view-prices" class="view">
                 <div class="price-summary">
@@ -470,5 +554,6 @@
     <script src="js/db.js"></script>
     <script src="js/dp-module.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/teams.js"></script>
 </body>
 </html>

@@ -1182,3 +1182,150 @@ input[type=checkbox] { accent-color: var(--blue); width: 16px; height: 16px; cur
 .kpi-clickable { cursor:pointer; transition:transform 0.2s, box-shadow 0.2s; }
 .kpi-clickable:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
 .kpi-clickable:active { transform:translateY(0); }
+
+/* ==================== TEAMS GANTT ==================== */
+.teams-controls {
+    display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;
+    padding:12px 16px; margin-bottom:16px;
+    background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px;
+    backdrop-filter:blur(20px);
+}
+.teams-controls-left, .teams-controls-center, .teams-controls-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.teams-control-label { font-size:13px; color:var(--text-secondary); font-weight:500; }
+.teams-select {
+    padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-tertiary); color:var(--text-primary); font-size:13px;
+}
+.teams-input {
+    padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+    background:var(--bg-tertiary); color:var(--text-primary); font-size:13px; width:160px;
+}
+.teams-input::placeholder { color:var(--text-secondary); }
+
+.teams-gantt-container {
+    border:1px solid var(--border); border-radius:12px; overflow:hidden;
+    background:var(--bg-secondary); backdrop-filter:blur(20px);
+}
+.teams-gantt-header {
+    display:flex; position:sticky; top:0; z-index:30;
+    border-bottom:2px solid var(--border); background:var(--bg-secondary);
+}
+.teams-label-header {
+    min-width:11rem; width:11rem; padding:8px 12px; font-weight:600; font-size:13px;
+    color:var(--text-primary); display:flex; align-items:center; justify-content:space-between;
+    border-right:2px solid var(--border); background:var(--bg-secondary);
+    position:sticky; left:0; z-index:20;
+}
+.teams-count-badge {
+    font-size:11px; background:var(--bg-tertiary); color:var(--text-secondary);
+    padding:2px 8px; border-radius:99px;
+}
+.teams-timeline-header {
+    overflow-x:auto; flex:1;
+}
+.teams-months, .teams-weeks { display:grid; grid-auto-flow:column; }
+.teams-month-header {
+    background:var(--bg-tertiary); border-bottom:1px solid var(--border);
+    font-weight:600; color:var(--text-secondary); text-align:center;
+    padding:6px 4px; font-size:11px; letter-spacing:0.5px;
+}
+.teams-kw-header {
+    text-align:center; padding:6px 2px; font-size:11px; font-weight:500;
+    color:var(--text-secondary); border-left:1px solid var(--border);
+    background:var(--bg-secondary); user-select:none;
+}
+.teams-kw-header.teams-today {
+    background:rgba(48,209,88,0.15); color:var(--green); font-weight:700;
+}
+
+.teams-gantt-row {
+    display:flex; border-bottom:1px solid var(--border);
+    transition:background 0.15s;
+}
+.teams-gantt-row:hover { background:rgba(255,255,255,0.02); }
+
+.teams-label {
+    min-width:11rem; width:11rem; padding:8px 12px; font-weight:500; font-size:13px;
+    color:var(--text-primary); display:flex; align-items:center; justify-content:space-between;
+    border-right:2px solid var(--border); background:var(--bg-secondary);
+    position:sticky; left:0; z-index:10; overflow:hidden;
+}
+.teams-label-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.teams-delete-btn {
+    background:transparent; border:none; color:var(--text-secondary);
+    cursor:pointer; font-size:14px; opacity:0; transition:opacity 0.2s, color 0.2s;
+    padding:2px 6px; border-radius:4px;
+}
+.teams-label:hover .teams-delete-btn { opacity:1; }
+.teams-delete-btn:hover { color:#ef4444; background:rgba(239,68,68,0.15); }
+
+.teams-timeline {
+    overflow-x:auto; flex:1; position:relative;
+}
+.teams-cells-container {
+    display:flex; position:relative; min-height:3.5rem;
+}
+.teams-cell {
+    height:3.5rem; border-left:1px solid var(--border); cursor:crosshair;
+    flex-shrink:0; transition:background 0.15s;
+}
+.teams-cell:hover { background:rgba(48,209,88,0.06); }
+.teams-cell.teams-today { background:rgba(48,209,88,0.08); }
+
+.teams-today-marker {
+    position:absolute; top:0; bottom:0; width:2px; z-index:15;
+    background:var(--green); box-shadow:0 0 8px rgba(48,209,88,0.4);
+}
+
+.teams-bar {
+    position:absolute; height:60%; top:20%;
+    border-radius:6px; color:#fff; font-size:11px; font-weight:500;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 8px; overflow:hidden; white-space:nowrap;
+    cursor:grab; z-index:5; user-select:none;
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.15);
+    transition:transform 0.15s, box-shadow 0.15s;
+}
+.teams-bar:hover {
+    transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    border-color:rgba(255,255,255,0.3);
+}
+.teams-bar-dragging { opacity:0.7; z-index:100; pointer-events:none; }
+.teams-bar-ghost {
+    background:rgba(48,209,88,0.5) !important;
+    border:2px dashed rgba(48,209,88,0.8); pointer-events:none; z-index:100;
+}
+
+.teams-progress {
+    position:absolute; bottom:0; left:0; height:4px;
+    background:linear-gradient(90deg,rgba(255,255,255,0.6),rgba(255,255,255,0.3));
+    border-radius:0 0 6px 6px; transition:width 0.3s;
+}
+.teams-resize-handle {
+    position:absolute; right:0; top:0; bottom:0; width:8px;
+    cursor:col-resize; background:rgba(255,255,255,0.2);
+    opacity:0; transition:opacity 0.2s;
+}
+.teams-bar:hover .teams-resize-handle { opacity:1; }
+
+.teams-empty-state {
+    display:none; text-align:center; padding:48px 24px;
+    color:var(--text-secondary);
+}
+.teams-empty-state div:first-child { font-size:48px; margin-bottom:12px; }
+.teams-empty-state h3 { color:var(--text-primary); margin:0 0 8px; }
+.teams-empty-state p { font-size:14px; }
+
+.teams-stats {
+    padding:10px 16px; font-size:12px; color:var(--text-secondary);
+    border-top:1px solid var(--border); margin-top:12px;
+}
+
+@media (max-width:640px) {
+    .teams-label, .teams-label-header { min-width:7rem; width:7rem; font-size:11px; padding:6px 8px; }
+    .teams-cell { height:2.8rem; }
+    .teams-bar { font-size:9px; padding:0 4px; }
+    .teams-controls { padding:8px 10px; }
+    .teams-input { width:120px; }
+}

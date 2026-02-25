@@ -22,10 +22,10 @@ let expandedProjects = new Set();
 // ===== DATABASE =====
 function openDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open('WorkManagerDB', 4);
+        const req = indexedDB.open('WorkManagerDB', 5);
         req.onupgradeneeded = e => {
             const d = e.target.result;
-            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status','certification'].forEach(s => {
+            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status','certification','teams','team_assignments'].forEach(s => {
                 if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath:'id', autoIncrement:true });
             });
         };
@@ -128,6 +128,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-' + view).classList.add('active');
         document.getElementById('viewTitle').textContent = item.querySelector('span').textContent;
+        if (view === 'teams' && typeof window.initTeamsView === 'function') window.initTeamsView();
         closeSidebar();
     });
 });
