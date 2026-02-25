@@ -902,6 +902,31 @@ function toggleProject(code) {
     renderProjects();
 }
 
+function filterDPTable(safeCode) {
+    const search = (document.getElementById(`dpSearch_${safeCode}`)?.value || '').toLowerCase();
+    const blowF = document.getElementById(`dpFilterBlow_${safeCode}`)?.value || '';
+    const spliceAPF = document.getElementById(`dpFilterSpliceAP_${safeCode}`)?.value || '';
+    const spliceDPF = document.getElementById(`dpFilterSpliceDP_${safeCode}`)?.value || '';
+    const statusF = document.getElementById(`dpFilterStatus_${safeCode}`)?.value || '';
+    const tbody = document.getElementById(`dpTableBody_${safeCode}`);
+    if (!tbody) return;
+    let visible = 0, total = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+        total++;
+        const dp = tr.dataset.dp || '';
+        const matchSearch = !search || dp.toLowerCase().includes(search);
+        const matchBlow = !blowF || tr.dataset.blow === blowF;
+        const matchSpliceAP = !spliceAPF || tr.dataset.spliceap === spliceAPF;
+        const matchSpliceDP = !spliceDPF || tr.dataset.splicedp === spliceDPF;
+        const matchStatus = !statusF || tr.dataset.status === statusF;
+        const show = matchSearch && matchBlow && matchSpliceAP && matchSpliceDP && matchStatus;
+        tr.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    const countEl = document.getElementById(`dpCount_${safeCode}`);
+    if (countEl) countEl.textContent = (blowF || spliceAPF || spliceDPF || statusF || search) ? `${visible}/${total} DPs` : `${total} DPs`;
+}
+
 function buildProjectMap() {
     const projMap = {};
     clients.forEach(c => {
@@ -950,6 +975,7 @@ function renderProjects() {
         let dpTableHtml = '';
         if (isExpanded) {
             const sortedDPs = [...data.dps].sort();
+            const safeCode = code.replace(/[^a-zA-Z0-9_-]/g,'');
             let dpRows = '';
             for (const dp of sortedDPs) {
                 const g = goByDP[dp];
@@ -968,10 +994,30 @@ function renderProjects() {
                 const anyGO = blowOK || spliceAPOK || spliceDPOK;
                 const anyWork = hasRA || hasRD || hasFusion;
                 const rowClass = allGO ? 'dp-row-green' : (anyGO || anyWork) ? 'dp-row-yellow' : 'dp-row-red';
-                let statusHtml = allGO ? '✅ En GO' : anyGO ? '🔄 Parcial' : anyWork ? '⚠️ Falta GO' : '⏳ Pendiente';
-                dpRows += `<tr class="${rowClass}"><td><strong>${dp}</strong></td><td>${blowOK?'✅':hasRA?'🟡':'❌'}</td><td>${spliceAPOK?'✅':hasFusion?'🟡':'❌'}</td><td>${spliceDPOK?'✅':'❌'}</td><td>${orderIcons}</td><td>${statusHtml}</td></tr>`;
+                const statusVal = allGO ? 'en-go' : anyGO ? 'parcial' : anyWork ? 'falta-go' : 'pendiente';
+                const statusHtml = allGO ? '✅ En GO' : anyGO ? '🔄 Parcial' : anyWork ? '⚠️ Falta GO' : '⏳ Pendiente';
+                const blowVal = blowOK ? 'ok' : hasRA ? 'parcial' : 'no';
+                const spliceAPVal = spliceAPOK ? 'ok' : hasFusion ? 'parcial' : 'no';
+                const spliceDPVal = spliceDPOK ? 'ok' : 'no';
+                dpRows += `<tr class="${rowClass}" data-dp="${dp}" data-blow="${blowVal}" data-spliceap="${spliceAPVal}" data-splicedp="${spliceDPVal}" data-status="${statusVal}"><td><strong>${dp}</strong></td><td>${blowOK?'✅':hasRA?'🟡':'❌'}</td><td>${spliceAPOK?'✅':hasFusion?'🟡':'❌'}</td><td>${spliceDPOK?'✅':'❌'}</td><td>${orderIcons}</td><td>${statusHtml}</td></tr>`;
             }
-            dpTableHtml = `<div class="dp-table-container"><table><thead><tr><th>${t('dpNumber')}</th><th>${t('sopladoRA')}</th><th>${t('fusionAP')}</th><th>${t('fusionDP')}</th><th>${t('ordenesCargadas')}</th><th>${t('statusCol')}</th></tr></thead><tbody>${dpRows}</tbody></table></div>`;
+            const filterBar = `<div class="dp-filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:8px 0;">
+                <input type="text" id="dpSearch_${safeCode}" placeholder="🔍 Buscar DP..." oninput="filterDPTable('${safeCode}')" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 10px;border-radius:8px;font-size:12px;width:120px;">
+                <select id="dpFilterBlow_${safeCode}" onchange="filterDPTable('${safeCode}')" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 8px;border-radius:8px;font-size:12px;">
+                    <option value="">Soplado: Todos</option><option value="ok">✅ GEREED</option><option value="parcial">🟡 Parcial</option><option value="no">❌ No</option>
+                </select>
+                <select id="dpFilterSpliceAP_${safeCode}" onchange="filterDPTable('${safeCode}')" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 8px;border-radius:8px;font-size:12px;">
+                    <option value="">Fusión AP: Todos</option><option value="ok">✅ GEREED</option><option value="parcial">🟡 Parcial</option><option value="no">❌ No</option>
+                </select>
+                <select id="dpFilterSpliceDP_${safeCode}" onchange="filterDPTable('${safeCode}')" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 8px;border-radius:8px;font-size:12px;">
+                    <option value="">Fusión DP: Todos</option><option value="ok">✅ GEREED</option><option value="no">❌ No</option>
+                </select>
+                <select id="dpFilterStatus_${safeCode}" onchange="filterDPTable('${safeCode}')" style="background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:6px 8px;border-radius:8px;font-size:12px;">
+                    <option value="">Status: Todos</option><option value="en-go">✅ En GO</option><option value="parcial">🔄 Parcial</option><option value="falta-go">⚠️ Falta GO</option><option value="pendiente">⏳ Pendiente</option>
+                </select>
+                <span id="dpCount_${safeCode}" style="font-size:11px;color:var(--text-secondary);margin-left:auto;"></span>
+            </div>`;
+            dpTableHtml = `<div class="dp-table-container">${filterBar}<table><thead><tr><th>${t('dpNumber')}</th><th>${t('sopladoRA')}</th><th>${t('fusionAP')}</th><th>${t('fusionDP')}</th><th>${t('ordenesCargadas')}</th><th>${t('statusCol')}</th></tr></thead><tbody id="dpTableBody_${safeCode}">${dpRows}</tbody></table></div>`;
         }
 
         html += `<div class="project-card${isExpanded ? ' expanded' : ''}" onclick="toggleProject('${code}')">
