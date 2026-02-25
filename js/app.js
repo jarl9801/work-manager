@@ -849,14 +849,22 @@ window.renderClients = function() {
 // ===== DROPDOWN CHECKBOX FILTERS =====
 const _filterSelections = { project: new Set(), dp: new Set(), phase: new Set(), anschluss: new Set(), contract: new Set() };
 
-window.toggleFilterDrop = function(name) {
-    document.querySelectorAll('.filter-menu').forEach(m => { if (m.id !== 'filterMenu_'+name) m.classList.remove('open'); });
-    document.getElementById('filterMenu_'+name)?.classList.toggle('open');
+window.toggleFilterDrop = function(name, event) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const menu = document.getElementById('filterMenu_'+name);
+    if (!menu) { console.error('No menu found: filterMenu_'+name); return; }
+    const wasOpen = menu.classList.contains('open');
+    // Close all menus first
+    document.querySelectorAll('.filter-menu').forEach(m => m.classList.remove('open'));
+    // Toggle the clicked one
+    if (!wasOpen) menu.classList.add('open');
 }
 
 // Close dropdowns on outside click
 document.addEventListener('click', e => {
-    if (!e.target.closest('.filter-drop')) document.querySelectorAll('.filter-menu').forEach(m => m.classList.remove('open'));
+    // Don't close if clicking inside a menu or on a filter button
+    if (e.target.closest('.filter-menu') || e.target.closest('.filter-btn')) return;
+    document.querySelectorAll('.filter-menu.open').forEach(m => m.classList.remove('open'));
 });
 
 function buildFilterMenu(name, items) {
