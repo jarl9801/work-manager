@@ -485,7 +485,13 @@
     window.teamsAddTeam = async function() {
         const input = document.getElementById('teams-new-name');
         const name = input.value.trim();
-        if (!name) return;
+        if (!name) {
+            input.focus();
+            input.placeholder = '⚠️ Escribe un nombre...';
+            input.style.borderColor = '#ef4444';
+            setTimeout(() => { input.placeholder = 'Nuevo equipo...'; input.style.borderColor = ''; }, 2000);
+            return;
+        }
         if (teamsData.some(t => t.name.toLowerCase() === name.toLowerCase())) {
             alert('Ya existe un equipo con ese nombre');
             return;
