@@ -135,6 +135,9 @@
             el.className = 'teams-kw-header';
             if (i === currentWeek && teamsSelectedYear === new Date().getFullYear()) el.classList.add('teams-today');
             el.textContent = `KW${i}`;
+            el.style.cursor = 'pointer';
+            el.title = `Clic para ver KW${i} en detalle`;
+            el.addEventListener('click', () => window.teamsShowWeekDetail(i));
             weeksEl.appendChild(el);
         }
 
@@ -552,6 +555,80 @@
         a.download = `equipos-gantt-${teamsSelectedYear}.csv`;
         a.click();
         URL.revokeObjectURL(a.href);
+    };
+
+    // ===== WEEK DETAIL VIEW =====
+    let teamsWeekDetailActive = false;
+
+    window.teamsShowWeekDetail = function(weekNum) {
+        teamsWeekDetailActive = true;
+        const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+        // Get the Monday of this ISO week
+        const jan4 = new Date(teamsSelectedYear, 0, 4);
+        const dayOfWeek = jan4.getDay() || 7;
+        const monday = new Date(jan4);
+        monday.setDate(jan4.getDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+
+        const dates = [];
+        for (let d = 0; d < 6; d++) {
+            const dt = new Date(monday);
+            dt.setDate(monday.getDate() + d);
+            dates.push(dt);
+        }
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+
+        const container = document.getElementById('teams-gantt-container');
+        container.innerHTML = `
+            <div class="teams-week-detail">
+                <div class="teams-week-detail-header">
+                    <button class="btn btn-sm btn-secondary" onclick="window.teamsBackToGantt()">← Volver al Gantt</button>
+                    <h3 style="margin:0;font-size:16px;">KW${weekNum} — ${monday.toLocaleDateString('es',{day:'numeric',month:'short'})} al ${dates[5].toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'})}</h3>
+                </div>
+                <div class="teams-week-grid">
+                    <div class="teams-week-corner">Equipo</div>
+                    ${dates.map((dt, i) => {
+                        const isToday = dt.toISOString().split('T')[0] === todayStr;
+                        return `<div class="teams-week-day-header${isToday ? ' teams-today' : ''}">${dayNames[i]}<br><span style="font-size:11px;opacity:0.7">${dt.getDate()}.${dt.getMonth()+1}</span></div>`;
+                    }).join('')}
+                    ${teamsData.map(team => {
+                        const assigns = teamsAssignments.filter(a => a.teamId === team.id && a.startWeek <= weekNum && a.endWeek >= weekNum);
+                        return `<div class="teams-week-team-label">${team.name}</div>
+                            ${dates.map((dt, di) => {
+                                const isToday = dt.toISOString().split('T')[0] === todayStr;
+                                const cellAssigns = assigns.map(a => `<div class="teams-week-bar" style="background:${a.color || '#30d158'}" title="${a.text} (${a.progress||0}%)">${a.text}</div>`).join('');
+                                return `<div class="teams-week-cell${isToday ? ' teams-today' : ''}">${cellAssigns}</div>`;
+                            }).join('')}`;
+                    }).join('')}
+                </div>
+            </div>`;
+    };
+
+    window.teamsBackToGantt = function() {
+        teamsWeekDetailActive = false;
+        // Rebuild the gantt container HTML
+        const container = document.getElementById('teams-gantt-container');
+        container.innerHTML = `
+            <div id="teams-gantt-header" class="teams-gantt-header">
+                <div class="teams-label-header">
+                    <span>👥 Equipos</span>
+                    <span id="teams-count" class="teams-count-badge">0</span>
+                </div>
+                <div class="teams-timeline-header custom-scrollbar">
+                    <div id="teams-months" class="teams-months"></div>
+                    <div id="teams-weeks" class="teams-weeks"></div>
+                </div>
+            </div>
+            <div id="teams-gantt-body"></div>
+            <div id="teams-empty-state" class="teams-empty-state" style="display:none;">
+                <div>👥</div>
+                <h3>No hay equipos</h3>
+                <p>Agrega tu primer equipo para organizar proyectos.</p>
+            </div>`;
+        teamsRender();
+        setTimeout(() => window.teamsScrollToToday(), 200);
     };
 
     // ===== INIT =====

@@ -1330,3 +1330,41 @@ input[type=checkbox] { accent-color: var(--blue); width: 16px; height: 16px; cur
     .teams-controls { padding:8px 10px; }
     .teams-input { width:120px; }
 }
+
+/* Week Detail View */
+.teams-week-detail { padding:16px; }
+.teams-week-detail-header { display:flex; align-items:center; gap:16px; margin-bottom:16px; }
+.teams-week-grid {
+    display:grid;
+    grid-template-columns: 11rem repeat(6, 1fr);
+    border:1px solid var(--border); border-radius:12px; overflow:hidden;
+}
+.teams-week-corner {
+    padding:12px; font-weight:600; font-size:13px; color:var(--text-primary);
+    background:var(--bg-tertiary); border-right:2px solid var(--border); border-bottom:2px solid var(--border);
+    display:flex; align-items:center;
+}
+.teams-week-day-header {
+    padding:12px 8px; text-align:center; font-weight:600; font-size:13px;
+    color:var(--text-secondary); background:var(--bg-tertiary);
+    border-bottom:2px solid var(--border); border-left:1px solid var(--border);
+}
+.teams-week-day-header.teams-today { background:rgba(48,209,88,0.15); color:var(--green); }
+.teams-week-team-label {
+    padding:12px; font-weight:500; font-size:13px; color:var(--text-primary);
+    background:var(--bg-secondary); border-right:2px solid var(--border);
+    border-bottom:1px solid var(--border); display:flex; align-items:center;
+    position:sticky; left:0; z-index:5;
+}
+.teams-week-cell {
+    padding:8px 6px; border-left:1px solid var(--border); border-bottom:1px solid var(--border);
+    min-height:56px; display:flex; flex-direction:column; gap:4px;
+    background:var(--bg-secondary); transition:background 0.15s;
+}
+.teams-week-cell:hover { background:rgba(255,255,255,0.03); }
+.teams-week-cell.teams-today { background:rgba(48,209,88,0.06); }
+.teams-week-bar {
+    padding:4px 8px; border-radius:6px; font-size:11px; font-weight:500;
+    color:#fff; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+    box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
