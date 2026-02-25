@@ -106,11 +106,11 @@ function toast(msg) {
 }
 
 // ===== NAVIGATION =====
-function toggleSidebar() {
+window.toggleSidebar = function() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebarOverlay').classList.toggle('open');
 }
-function closeSidebar() {
+window.closeSidebar = function() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('open');
 }
@@ -195,7 +195,7 @@ function detectCSVType(headers) {
     return null;
 }
 
-async function smartImport(input) {
+window.smartImport = async function(input) {
     const files = input.files;
     if (!files.length) return;
     for (const file of files) {
@@ -432,9 +432,9 @@ async function autoUpdateFromFusion() {
 }
 
 // ===== IMPORT REPORT MODAL =====
-function closeImportReport() { document.getElementById('importReportModal').classList.remove('show'); }
+window.closeImportReport = function() { document.getElementById('importReportModal').classList.remove('show'); }
 
-function showImportReport(type, newOrders, duplicates, missing) {
+window.showImportReport = function(type, newOrders, duplicates, missing) {
     const typeNames = { soplado_ra:'Soplado RA', soplado_rd:'Soplado RD', fusion:'Fusión' };
     document.getElementById('importReportTitle').textContent = `📊 ${t('resultadoImport')} — ${typeNames[type] || type}`;
     const total = newOrders.length + duplicates.length;
@@ -515,7 +515,7 @@ function calculateGODiscrepancies() {
 }
 
 // ===== EXPORT =====
-function exportData() {
+window.exportData = function() {
     let csv = '', filename = 'export.csv';
     const activeView = document.querySelector('.view.active')?.id;
     if (activeView === 'view-clients') {
@@ -695,13 +695,13 @@ function updateClientFilters() {
     pSel.value = pv; dSel.value = dv;
 }
 
-function sortClients(field) {
+window.sortClients = function(field) {
     if (clientSort.field === field) clientSort.dir *= -1;
     else { clientSort.field = field; clientSort.dir = 1; }
     renderClients();
 }
 
-function renderClients() {
+window.renderClients = function() {
     const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
     const fp = document.getElementById('clientFilterProject')?.value || '';
     const fd = document.getElementById('clientFilterDP')?.value || '';
@@ -723,6 +723,7 @@ function renderClients() {
     tbody.innerHTML = filtered.length ? filtered.map(c => {
         const addr = `${c.street} ${c.hausnummer}${c.hausnummerZusatz ? ' '+c.hausnummerZusatz : ''}`;
         return `<tr>
+            <td><strong>${c.projectCode || '—'}</strong></td>
             <td style="font-size:11px">${c.auftrag}</td>
             <td><strong>${c.dp}</strong></td>
             <td>${addr}</td>
@@ -731,19 +732,19 @@ function renderClients() {
             <td><span class="badge badge-${c.status}">${c.status}</span></td>
             <td style="font-size:12px">${c.phase}</td>
         </tr>`;
-    }).join('') : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-tertiary)">${t('noData')}</td></tr>`;
+    }).join('') : `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-tertiary)">${t('noData')}</td></tr>`;
     const countEl = document.getElementById('clientCount');
     if (countEl) countEl.textContent = `${filtered.length} / ${clients.length} clientes`;
 }
 
 // ===== ORDERS =====
-function switchOrderTab(tab) {
+window.switchOrderTab = function(tab) {
     currentOrderTab = tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-'+tab));
 }
 
-function applyOrderFilters() {
+window.applyOrderFilters = function() {
     orderFilters.search = (document.getElementById('orderSearch')?.value || '').toLowerCase();
     orderFilters.technician = document.getElementById('filterTechnician')?.value || '';
     orderFilters.project = document.getElementById('filterProject')?.value || '';
@@ -772,7 +773,7 @@ function renderPhotoLinks(photosStr) {
     }).filter(Boolean).join('');
 }
 
-function toggleOrderDetail(tr, type, index) {
+window.toggleOrderDetail = function(tr, type, index) {
     const existing = tr.nextElementSibling;
     if (existing && existing.classList.contains('order-detail-row')) { existing.remove(); return; }
     tr.closest('tbody').querySelectorAll('.order-detail-row').forEach(r => r.remove());
@@ -846,7 +847,7 @@ function renderOrders() {
 }
 
 // ===== ORDER MODAL =====
-function openOrderModal(type) {
+window.openOrderModal = function(type) {
     editingOrderType = type;
     const modal = document.getElementById('orderModal');
     const title = type === 'ra' ? 'Soplado RA' : type === 'rd' ? 'Soplado RD' : 'Fusión';
@@ -875,7 +876,7 @@ function openOrderModal(type) {
     modal.classList.add('show');
 }
 
-function closeOrderModal() { document.getElementById('orderModal').classList.remove('show'); }
+window.closeOrderModal = function() { document.getElementById('orderModal').classList.remove('show'); }
 
 async function saveOrderFromModal() {
     const g = id => (document.getElementById('om_'+id)?.value || '').trim();
@@ -1084,12 +1085,12 @@ function renderInvoicing() {
     }));
 }
 
-function toggleAllInv(master) {
+window.toggleAllInv = function(master) {
     document.querySelectorAll('.inv-check').forEach(cb => cb.checked = master.checked);
     document.getElementById('markInvoicedBtn').style.display = document.querySelectorAll('.inv-check:checked').length > 0 ? '' : 'none';
 }
 
-async function markInvoiced() {
+window.markInvoiced = async function() {
     const ids = [...document.querySelectorAll('.inv-check:checked')].map(cb => parseInt(cb.dataset.id));
     if (!ids.length) return;
     const invNum = prompt('Nº Factura:');

@@ -550,7 +550,7 @@ body {
     border-bottom: 0.5px solid var(--separator);
 }
 
-.table-scroll { max-height: 65vh; overflow-y: auto; }
+.table-scroll { max-height: calc(100vh - 180px); overflow-y: auto; }
 
 table { width: 100%; border-collapse: collapse; }
 
