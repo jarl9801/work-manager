@@ -898,6 +898,11 @@ async function saveOrderFromModal() {
 }
 
 // ===== PROJECTS =====
+function navigateTo(view) {
+    const navItem = document.querySelector(`[data-view="${view}"]`);
+    if (navItem) navItem.click();
+}
+
 function toggleProject(code) {
     if (expandedProjects.has(code)) expandedProjects.delete(code);
     else expandedProjects.add(code);

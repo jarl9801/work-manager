@@ -92,7 +92,7 @@
             <div id="view-dashboard" class="view active">
                 <!-- Primary KPIs -->
                 <div class="kpi-grid kpi-grid-3">
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" onclick="navigateTo('projects')">
                         <div class="kpi-icon green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
                         <div class="kpi-body">
                             <div class="kpi-value" id="totalProjects">0</div>
@@ -100,7 +100,7 @@
                         </div>
                         <div class="kpi-trend" id="projectsTrend">—</div>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" onclick="navigateTo('projects')">
                         <div class="kpi-icon blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
                         <div class="kpi-body">
                             <div class="kpi-value" id="totalDPs">0</div>
@@ -108,7 +108,7 @@
                         </div>
                         <div class="kpi-trend" id="dpsTrend">—</div>
                     </div>
-                    <div class="kpi-card">
+                    <div class="kpi-card kpi-clickable" onclick="navigateTo('clients')">
                         <div class="kpi-icon cyan"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
                         <div class="kpi-body">
                             <div class="kpi-value" id="totalClients">0</div>
@@ -120,19 +120,19 @@
 
                 <!-- Secondary KPIs -->
                 <div class="kpi-grid kpi-grid-3" style="margin-bottom:28px;">
-                    <div class="kpi-card kpi-card-accent orange">
+                    <div class="kpi-card kpi-card-accent orange kpi-clickable" onclick="navigateTo('orders')">
                         <div class="kpi-body">
                             <div class="kpi-value" id="pendingReview">0</div>
                             <div class="kpi-label">Pendientes Revisión</div>
                         </div>
                     </div>
-                    <div class="kpi-card kpi-card-accent red">
+                    <div class="kpi-card kpi-card-accent red kpi-clickable" onclick="navigateTo('orders')">
                         <div class="kpi-body">
                             <div class="kpi-value" id="goDiscrepancies">0</div>
                             <div class="kpi-label">Discrepancias GO</div>
                         </div>
                     </div>
-                    <div class="kpi-card kpi-card-accent purple">
+                    <div class="kpi-card kpi-card-accent purple kpi-clickable" onclick="navigateTo('invoicing')">
                         <div class="kpi-body">
                             <div class="kpi-value" id="readyToCertify">0</div>
                             <div class="kpi-label">Listos para Certificar</div>
@@ -146,11 +146,11 @@
 
                 <!-- Dashboard grid -->
                 <div class="dash-grid">
-                    <div class="dash-card">
+                    <div class="dash-card kpi-clickable" onclick="navigateTo('orders')">
                         <h3>📊 Estado General</h3>
                         <div id="statusOverview" class="status-overview"></div>
                     </div>
-                    <div class="dash-card">
+                    <div class="dash-card kpi-clickable" onclick="navigateTo('orders')">
                         <h3>🕐 Actividad Reciente</h3>
                         <div id="activityFeed" class="activity-feed"></div>
                     </div>
