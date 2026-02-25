@@ -22,10 +22,10 @@ let expandedProjects = new Set();
 // ===== DATABASE =====
 function openDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open('WorkManagerDB', 6);
+        const req = indexedDB.open('WorkManagerDB', 7);
         req.onupgradeneeded = e => {
             const d = e.target.result;
-            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status','certification','teams','team_assignments'].forEach(s => {
+            ['orders','clients','orders_ra','orders_rd','orders_fusion','projects','go_status','certification','teams','team_assignments','team_daily'].forEach(s => {
                 if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath:'id', autoIncrement:true });
             });
         };

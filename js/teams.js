@@ -13,6 +13,7 @@
     let teamsInitialized = false;
     let teamsNextId = 1;
     let teamsNextAssignId = 1;
+    let teamsDailyData = []; // {teamId, year, week, day (0-5 Mon-Sat), project, color}
 
     // Drag state
     let teamsDragInfo = { isDragging: false, teamId: null, startWeek: null, endWeek: null, ghostEl: null };
@@ -67,8 +68,22 @@
             teamsData = await teamsGetAll('teams');
         }
 
+        teamsDailyData = await teamsGetAll('team_daily');
         teamsNextId = teamsData.length ? Math.max(...teamsData.map(t => t.id)) + 1 : 1;
         teamsNextAssignId = teamsAssignments.length ? Math.max(...teamsAssignments.map(a => a.id)) + 1 : 1;
+    }
+
+    function getDailyKey(teamId, year, week, day) {
+        return `${teamId}|${year}|${week}|${day}`;
+    }
+
+    function getDailyForWeek(teamId, year, week) {
+        return teamsDailyData.filter(d => d.teamId === teamId && d.year === year && d.week === week);
+    }
+
+    function getWeekFillPercent(teamId, year, week) {
+        const days = getDailyForWeek(teamId, year, week);
+        return days.length / 6; // 6 days Mon-Sat
     }
 
     // ===== CALENDAR HELPERS =====
@@ -198,6 +213,22 @@
                 cell.dataset.week = i;
                 cell.dataset.teamId = team.id;
                 if (i === currentWeek && teamsSelectedYear === new Date().getFullYear()) cell.classList.add('teams-today');
+
+                // Daily fill visualization
+                const fillPct = getWeekFillPercent(team.id, teamsSelectedYear, i);
+                if (fillPct > 0) {
+                    const dailyDays = getDailyForWeek(team.id, teamsSelectedYear, i);
+                    const mainColor = dailyDays[0]?.color || '#30d158';
+                    if (fillPct >= 1) {
+                        cell.style.background = mainColor;
+                        cell.style.opacity = '0.85';
+                    } else {
+                        cell.style.background = `linear-gradient(to right, ${mainColor} ${fillPct * 100}%, transparent ${fillPct * 100}%)`;
+                        cell.style.opacity = '0.7';
+                    }
+                    cell.title = `KW${i}: ${dailyDays.length}/6 días — ${dailyDays[0]?.project || ''}`;
+                }
+
                 cellsCont.appendChild(cell);
             }
 
@@ -560,11 +591,18 @@
     // ===== WEEK DETAIL VIEW =====
     let teamsWeekDetailActive = false;
 
+    let teamsCurrentWeekView = null;
+    let teamsCurrentProject = { name: '', color: '#30d158' };
+
     window.teamsShowWeekDetail = function(weekNum) {
         teamsWeekDetailActive = true;
+        teamsCurrentWeekView = weekNum;
+        renderWeekDetail(weekNum);
+    };
+
+    function renderWeekDetail(weekNum) {
         const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-        // Get the Monday of this ISO week
         const jan4 = new Date(teamsSelectedYear, 0, 4);
         const dayOfWeek = jan4.getDay() || 7;
         const monday = new Date(jan4);
@@ -580,12 +618,65 @@
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
 
+        // Build team rows
+        let teamRowsHtml = '';
+        teamsData.forEach(team => {
+            const assigns = teamsAssignments.filter(a => a.teamId === team.id && a.startWeek <= weekNum && a.endWeek >= weekNum);
+            const dailyDays = getDailyForWeek(team.id, teamsSelectedYear, weekNum);
+            const filledCount = dailyDays.length;
+
+            teamRowsHtml += `<div class="teams-week-team-label">
+                ${team.name}
+                <span style="font-size:11px;color:var(--text-secondary);margin-left:auto;">${filledCount}/6</span>
+            </div>`;
+
+            dates.forEach((dt, di) => {
+                const isToday = dt.toISOString().split('T')[0] === todayStr;
+                const dailyEntry = teamsDailyData.find(d => d.teamId === team.id && d.year === teamsSelectedYear && d.week === weekNum && d.day === di);
+                const assignBars = assigns.map(a => `<div class="teams-week-bar" style="background:${a.color || '#30d158'}" title="${a.text}">${a.text}</div>`).join('');
+
+                let cellClass = 'teams-week-cell';
+                if (isToday) cellClass += ' teams-today';
+                if (dailyEntry) cellClass += ' teams-week-filled';
+
+                let cellContent = '';
+                if (dailyEntry) {
+                    cellContent = `<div class="teams-week-bar" style="background:${dailyEntry.color || '#30d158'}">${dailyEntry.project || '✔'}</div>`;
+                } else if (assignBars) {
+                    cellContent = assignBars;
+                }
+
+                const fillStyle = dailyEntry ? `background:${dailyEntry.color || '#30d158'}22;` : '';
+
+                teamRowsHtml += `<div class="${cellClass}" style="cursor:pointer;${fillStyle}" 
+                    onclick="window.teamsToggleDay(${team.id},${weekNum},${di})"
+                    title="${dailyEntry ? 'Clic para quitar' : 'Clic para asignar trabajo'}">${cellContent}</div>`;
+            });
+        });
+
+        // Summary row
+        let summaryHtml = '<div class="teams-week-team-label" style="font-weight:700;background:var(--bg-tertiary);">Resumen</div>';
+        dates.forEach((dt, di) => {
+            const teamsWorking = teamsData.filter(team => teamsDailyData.some(d => d.teamId === team.id && d.year === teamsSelectedYear && d.week === weekNum && d.day === di));
+            summaryHtml += `<div class="teams-week-cell" style="text-align:center;font-weight:600;font-size:14px;color:${teamsWorking.length > 0 ? 'var(--green)' : 'var(--text-tertiary)'};">
+                ${teamsWorking.length}/${teamsData.length}
+            </div>`;
+        });
+
         const container = document.getElementById('teams-gantt-container');
         container.innerHTML = `
             <div class="teams-week-detail">
                 <div class="teams-week-detail-header">
                     <button class="btn btn-sm btn-secondary" onclick="window.teamsBackToGantt()">← Volver al Gantt</button>
                     <h3 style="margin:0;font-size:16px;">KW${weekNum} — ${monday.toLocaleDateString('es',{day:'numeric',month:'short'})} al ${dates[5].toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'})}</h3>
+                    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="teams-daily-project" placeholder="Nombre proyecto..." value="${teamsCurrentProject.name}" 
+                            style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-tertiary);color:var(--text-primary);font-size:12px;width:160px;"
+                            oninput="window.teamsSetDailyProject(this.value)">
+                        <input type="color" id="teams-daily-color" value="${teamsCurrentProject.color}" 
+                            style="width:32px;height:32px;border:none;border-radius:8px;cursor:pointer;"
+                            onchange="window.teamsSetDailyColor(this.value)">
+                    </div>
                 </div>
                 <div class="teams-week-grid">
                     <div class="teams-week-corner">Equipo</div>
@@ -593,17 +684,33 @@
                         const isToday = dt.toISOString().split('T')[0] === todayStr;
                         return `<div class="teams-week-day-header${isToday ? ' teams-today' : ''}">${dayNames[i]}<br><span style="font-size:11px;opacity:0.7">${dt.getDate()}.${dt.getMonth()+1}</span></div>`;
                     }).join('')}
-                    ${teamsData.map(team => {
-                        const assigns = teamsAssignments.filter(a => a.teamId === team.id && a.startWeek <= weekNum && a.endWeek >= weekNum);
-                        return `<div class="teams-week-team-label">${team.name}</div>
-                            ${dates.map((dt, di) => {
-                                const isToday = dt.toISOString().split('T')[0] === todayStr;
-                                const cellAssigns = assigns.map(a => `<div class="teams-week-bar" style="background:${a.color || '#30d158'}" title="${a.text} (${a.progress||0}%)">${a.text}</div>`).join('');
-                                return `<div class="teams-week-cell${isToday ? ' teams-today' : ''}">${cellAssigns}</div>`;
-                            }).join('')}`;
-                    }).join('')}
+                    ${teamRowsHtml}
+                    ${summaryHtml}
                 </div>
             </div>`;
+    }
+
+    window.teamsSetDailyProject = function(name) { teamsCurrentProject.name = name; };
+    window.teamsSetDailyColor = function(color) { teamsCurrentProject.color = color; };
+
+    window.teamsToggleDay = async function(teamId, week, day) {
+        const existing = teamsDailyData.find(d => d.teamId === teamId && d.year === teamsSelectedYear && d.week === week && d.day === day);
+        if (existing) {
+            // Remove
+            await teamsDelete('team_daily', existing.id);
+            teamsDailyData = teamsDailyData.filter(d => d.id !== existing.id);
+        } else {
+            // Add
+            const entry = {
+                teamId, year: teamsSelectedYear, week, day,
+                project: teamsCurrentProject.name || '',
+                color: teamsCurrentProject.color || '#30d158'
+            };
+            const id = await teamsPut('team_daily', entry);
+            entry.id = id;
+            teamsDailyData.push(entry);
+        }
+        renderWeekDetail(week);
     };
 
     window.teamsBackToGantt = function() {
