@@ -352,34 +352,51 @@ async function handleCSVUpload(input, type) {
 
 // ===== IMPORT FUNCTIONS =====
 async function importClients(objs) {
-    await dbClear('clients');
+    // Build lookup of existing clients by auftrag to merge (not overwrite)
+    const existingByAuftrag = {};
+    for (const c of clients) { if (c.auftrag) existingByAuftrag[c.auftrag] = c; }
+    let added = 0, updated = 0;
+    const importedAuftrags = new Set();
     const projectMap = {};
     for (const o of objs) {
+        const auftrag = (o['Auftragsnummer'] || '').trim();
+        if (!auftrag) continue; // skip summary rows (DP-level rows without auftrag)
         const dpFull = o['DP'] || '';
         const projCode = extractProjectCode(o);
         const dpNorm = normalizeDP(dpFull);
         const grundNA = (o['GrundNA'] || '').trim();
         let contract = 'R20';
-        if (['R0','R18','R20'].includes(grundNA)) contract = grundNA;
-        const statusRaw = (o['ANSCHLUSSSTATUS'] || o['Status'] || '0').toString().trim();
+        if (['R0','R1','R6','R18','R20'].includes(grundNA)) contract = grundNA;
+        const statusRaw = (o['ANSCHLUSSSTATUS'] || '0').toString().trim();
         const status = statusRaw === 'Fertig' ? 'Fertig' : statusRaw;
         const phase = (o['Status'] || '').trim();
+        const existing = existingByAuftrag[auftrag];
         const client = {
-            auftrag: o['Auftragsnummer'] || '', projektnummer: o['Projektnummer'] || '', projectCode: projCode,
+            id: existing ? existing.id : undefined,
+            auftrag, projektnummer: o['Projektnummer'] || '', projectCode: projCode,
             dp: dpNorm, dpFull, street: o['Straße'] || '', hausnummer: o['Hausnummer'] || '',
             hausnummerZusatz: o['Hausnummernzusatz'] || '', unit: o['Unit'] || '',
             cableId: o['Cable ID (From TRI)'] || '', contract, status, phase,
             farbeRohre: o['Farbe Rohre'] || '', datumHausanschluss: o['Datum Hausanschluss'] || '',
         };
+        if (!existing) { delete client.id; added++; } else { updated++; }
         await dbPut('clients', client);
+        importedAuftrags.add(auftrag);
         if (projCode && !projectMap[projCode]) projectMap[projCode] = { code: projCode, projektnummer: client.projektnummer, dps: new Set() };
         if (projCode) projectMap[projCode].dps.add(dpNorm);
+    }
+    // Also gather projects from existing clients not in this import
+    for (const c of clients) {
+        if (!importedAuftrags.has(c.auftrag) && c.projectCode) {
+            if (!projectMap[c.projectCode]) projectMap[c.projectCode] = { code: c.projectCode, projektnummer: c.projektnummer, dps: new Set() };
+            projectMap[c.projectCode].dps.add(c.dp);
+        }
     }
     await dbClear('projects');
     for (const [code, data] of Object.entries(projectMap)) {
         await dbPut('projects', { code, projektnummer: data.projektnummer, dpCount: data.dps.size });
     }
-    toast(`✅ ${objs.length} clientes ${t('imported')}`);
+    toast(`✅ ${added} nuevos, ${updated} actualizados — ${t('imported')}`);
 }
 
 async function importRA(objs) {
@@ -734,7 +751,7 @@ function renderDashboardProjects() {
     let html = '';
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
         const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', '103':'var(--yellow)', '100':'var(--orange)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const colors = { '108':'var(--red)', '109':'var(--blue)', '103':'var(--yellow)', '102':'var(--purple,#a855f7)', '101':'var(--teal,#14b8a6)', '100':'var(--orange)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
             if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}"></div>`;
@@ -807,11 +824,13 @@ window.renderClients = function() {
     const fp = document.getElementById('clientFilterProject')?.value || '';
     const fd = document.getElementById('clientFilterDP')?.value || '';
     const fs = document.getElementById('clientFilterStatus')?.value || '';
+    const fc = document.getElementById('clientFilterContract')?.value || '';
     let filtered = clients.filter(c => {
         if (search && !`${c.auftrag} ${c.dp} ${c.street} ${c.hausnummer} ${c.cableId}`.toLowerCase().includes(search)) return false;
         if (fp && c.projectCode !== fp) return false;
         if (fd && c.dp !== fd) return false;
         if (fs && c.status !== fs) return false;
+        if (fc && c.contract !== fc) return false;
         return true;
     });
     const f = clientSort.field;
@@ -1040,7 +1059,7 @@ function buildProjectMap() {
     const projMap = {};
     clients.forEach(c => {
         if (!c.projectCode) return;
-        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {'108':0,'109':0,'103':0,'100':0,'0':0,'Fertig':0} };
+        if (!projMap[c.projectCode]) projMap[c.projectCode] = { total:0, dps: new Set(), statusCounts: {'108':0,'109':0,'103':0,'102':0,'101':0,'100':0,'0':0,'Fertig':0} };
         projMap[c.projectCode].total++;
         projMap[c.projectCode].dps.add(c.dp);
         const s = c.status in projMap[c.projectCode].statusCounts ? c.status : '0';
@@ -1073,7 +1092,7 @@ function renderProjects() {
     Object.entries(projMap).sort((a,b) => a[0].localeCompare(b[0])).forEach(([code, data]) => {
         const isExpanded = expandedProjects.has(code);
         const fertigPct = data.total ? Math.round(data.statusCounts['Fertig'] / data.total * 100) : 0;
-        const colors = { '108':'var(--red)', '109':'var(--blue)', '103':'var(--yellow)', '100':'var(--orange)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
+        const colors = { '108':'var(--red)', '109':'var(--blue)', '103':'var(--yellow)', '102':'var(--purple,#a855f7)', '101':'var(--teal,#14b8a6)', '100':'var(--orange)', '0':'var(--text-tertiary)', 'Fertig':'var(--green)' };
         let barHtml = '';
         for (const [s, cnt] of Object.entries(data.statusCounts)) {
             if (cnt > 0) barHtml += `<div style="width:${(cnt/data.total*100).toFixed(1)}%;background:${colors[s]}" title="${s}: ${cnt}"></div>`;

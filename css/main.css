@@ -643,6 +643,8 @@ tr.order-row:hover td { background: rgba(255,255,255,0.04); }
 .badge-108 { background: var(--red-dim); color: var(--red); }
 .badge-109 { background: var(--blue-dim); color: var(--blue); }
 .badge-103 { background: var(--yellow-dim); color: var(--yellow); }
+.badge-102 { background: rgba(168,85,247,0.15); color: #a855f7; }
+.badge-101 { background: rgba(20,184,166,0.15); color: #14b8a6; }
 .badge-100 { background: var(--orange-dim); color: var(--orange); }
 .badge-0 { background: rgba(72,72,74,0.3); color: var(--text-tertiary); }
 .badge-Fertig { background: var(--green-dim); color: var(--green); }
@@ -653,6 +655,8 @@ tr.order-row:hover td { background: rgba(255,255,255,0.04); }
 .badge-certified { background: var(--purple-dim); color: var(--purple); }
 .badge-invoiced { background: var(--green-dim); color: var(--green); }
 .badge-R0 { background: var(--green-dim); color: var(--green); }
+.badge-R1 { background: rgba(20,184,166,0.15); color: #14b8a6; }
+.badge-R6 { background: rgba(168,85,247,0.15); color: #a855f7; }
 .badge-R18 { background: var(--orange-dim); color: var(--orange); }
 .badge-R20 { background: var(--red-dim); color: var(--red); }
 

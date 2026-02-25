@@ -186,11 +186,21 @@
                     <select id="clientFilterStatus" onchange="renderClients()">
                         <option value="">Todos Estados</option>
                         <option value="0">0 - Sin progreso</option>
-                        <option value="100">100 - Termin</option>
-                        <option value="103">103 - HBG</option>
+                        <option value="100">100 - HAS</option>
+                        <option value="101">101 - Spleiße</option>
+                        <option value="102">102 - Abliefern</option>
+                        <option value="103">103 - Termin</option>
                         <option value="108">108 - Tiefbau</option>
                         <option value="109">109 - Einblasen</option>
                         <option value="Fertig">Fertig</option>
+                    </select>
+                    <select id="clientFilterContract" onchange="renderClients()">
+                        <option value="">Todos Contratos</option>
+                        <option value="R0">R0</option>
+                        <option value="R1">R1</option>
+                        <option value="R6">R6</option>
+                        <option value="R18">R18</option>
+                        <option value="R20">R20</option>
                     </select>
                     <span class="toolbar-count" id="clientCount">0 clientes</span>
                 </div>
