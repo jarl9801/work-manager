@@ -1,5 +1,5 @@
 {
-  "updated": "2026-02-26T07:01:26.342500",
+  "updated": "2026-02-26T12:00:10.119909",
   "fusion": [
     {
       "Timestamp": "1/27/2026 19:09:16",
@@ -1524,6 +1524,70 @@
       "Color miniducto": "Turquesa",
       "Incidencias (si las hubo)": "LA FIBRA SE DETIENE A 207M.",
       "Fotos del Trabajo": "",
+      "Número de Fibras": "6",
+      "Certificado": "FALSE"
+    },
+    {
+      "Timestamp": "2/26/2026 9:45:02",
+      "Código de Proyecto": "QFF-002",
+      "DP": "DP-05",
+      "Calle": "Auf Der Schmelz 63a",
+      "KA cliente": "KA09",
+      "Técnico Responsable": "Simon Pizarro",
+      "Fecha de Inicio": "2/26/2026",
+      "Fecha de Finalización": "2/26/2026",
+      "Metros Soplados": "80",
+      "Color miniducto": "Turquesa",
+      "Incidencias (si las hubo)": "",
+      "Fotos del Trabajo": "https://drive.google.com/open?id=1Hp02uQehugeSCcNMgSoGzh_Dhlj3X5yk",
+      "Número de Fibras": "6",
+      "Certificado": "FALSE"
+    },
+    {
+      "Timestamp": "2/26/2026 9:57:53",
+      "Código de Proyecto": "QFF-002",
+      "DP": "DP-05",
+      "Calle": "Auf der schmelz 53",
+      "KA cliente": "KA013",
+      "Técnico Responsable": "Simon Pizarro",
+      "Fecha de Inicio": "2/26/2026",
+      "Fecha de Finalización": "2/26/2026",
+      "Metros Soplados": "70",
+      "Color miniducto": "Verde",
+      "Incidencias (si las hubo)": "",
+      "Fotos del Trabajo": "https://drive.google.com/open?id=1oOEWFMX_iYUxMKQ81JPc--IadZblTfJ-",
+      "Número de Fibras": "6",
+      "Certificado": "FALSE"
+    },
+    {
+      "Timestamp": "2/26/2026 10:18:43",
+      "Código de Proyecto": "QFF-002",
+      "DP": "DP-05",
+      "Calle": "Schulgasse 45",
+      "KA cliente": "KA036",
+      "Técnico Responsable": "Simon Pizarro",
+      "Fecha de Inicio": "2/26/2026",
+      "Fecha de Finalización": "2/26/2026",
+      "Metros Soplados": "116",
+      "Color miniducto": "Turquesa",
+      "Incidencias (si las hubo)": "",
+      "Fotos del Trabajo": "https://drive.google.com/open?id=1Rr3c4qaGA03zrqlos7f-ufFqzcPtmYcB",
+      "Número de Fibras": "6",
+      "Certificado": "FALSE"
+    },
+    {
+      "Timestamp": "2/26/2026 10:19:45",
+      "Código de Proyecto": "QFF-002",
+      "DP": "DP-05",
+      "Calle": "Schulgasse 47",
+      "KA cliente": "KA035",
+      "Técnico Responsable": "Simon Pizarro",
+      "Fecha de Inicio": "2/26/2026",
+      "Fecha de Finalización": "2/26/2026",
+      "Metros Soplados": "120",
+      "Color miniducto": "Violeta",
+      "Incidencias (si las hubo)": "",
+      "Fotos del Trabajo": "https://drive.google.com/open?id=1I5Gupyww7m2nZXxPfxXm_ItlvjjrivBF",
       "Número de Fibras": "6",
       "Certificado": "FALSE"
     }
